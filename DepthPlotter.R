@@ -3,7 +3,7 @@
 # Student of Marine Sciences in Utrecht
 # 2014-04-11
 
-# Creates a plot based on depth and one variable
+# Creates a plot based on depth and one variable (DepthPlotter can also do this)
 BasicPlot <- function(depth, var, add=FALSE, type="l", ylab=Depth~(m), xtitle="",
                       ylim=c(max(depth), min(depth)), ...){
     if(!add){
@@ -26,8 +26,6 @@ DepthPlotter <- function(depth=NULL, var=NULL, xlab=NULL,
             stop("no var")
         if(is.null(depth))
             stop("no depth")
-        if(is.null(ncol(var)))
-            return(BasicPlot(depth, var, ...))            # only depth and one var
     } else{ # i.e. if there is a df
         if(!is.null(var)){
             warning("Adding var to vars from df")
@@ -41,12 +39,12 @@ DepthPlotter <- function(depth=NULL, var=NULL, xlab=NULL,
         var   <- df[,-depthcol]
     } # by now the data is provided in a depth/var format for the rest of the function
     if(is.null(ncol(var)))
-        return(BasicPlot(depth, var, ...))                # only depth and one var
+        return(BasicPlot(depth, var, xtitle=xlab, ...))     # only depth and one var
     if(oneplot){
         rangeofall <- c(min(var), max(var))
         BasicPlot(depth, var[,1], xlim=rangeofall, ...)
         for(i in 2:ncol(var))
-            BasicPlot(depth, var[,i], add=TRUE, ...)      # oneplot it
+            BasicPlot(depth, var[,i], add=TRUE, xtitle=xlab, ...) # everything in one plot
     } else if(length(xlab)==ncol(var)){
         xlabs <- xlab
         for(i in 1:ncol(var))
@@ -54,21 +52,12 @@ DepthPlotter <- function(depth=NULL, var=NULL, xlab=NULL,
     } else if(length(xlab)==1)
         for(i in 1:ncol(var))
             BasicPlot(depth, var[,i], xtitle=xlab, ...)     # multiplot with same xlab
-    else if(is.null(xlab)){
+    else if(is.null(xlab)){                                 # no x-lab but varnames        
         if(!is.null(names(var)))
             for(i in 1:ncol(var))
-                BasicPlot(depth, var[,i], xtitle=names(var)[i], ...) # multiplot with names
+                BasicPlot(depth, var[,i], xtitle=names(var)[i], ...) 
         else 
-            for(i in 1:ncol(var))                                    # no xlabs
+            for(i in 1:ncol(var))                           # no xlabs
                 BasicPlot(depth, var[,i], ...)
     }
 }
-
-
-
-
-
-
-
-
-
