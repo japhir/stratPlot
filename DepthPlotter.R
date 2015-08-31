@@ -2,7 +2,7 @@
 # Ilja Kocken
 # Student of Marine Sciences at Utrecht University
 # First version: 2014-04-11
-# Latest version: 2015-08-27
+# Latest version: 2015-08-31
 
 # Creates a plot based on depth and one variable (DepthPlotter calls this function)
 BasicPlot <- function(depth,      # a vector of depth values
@@ -12,7 +12,11 @@ BasicPlot <- function(depth,      # a vector of depth values
                       ylab=Depth~(m), 
                       xtitle="",
                       ylim=c(max(depth, na.rm=TRUE), min(depth, na.rm=TRUE)), 
-                      mar=c(2, 5, 5, 2) + 0.1, ...){
+                      legend=NULL,
+                      legendpos="topright",
+                      bty="n",
+                      mar=c(2, 5, 5, 2) + 0.1, 
+                      ...){
     # set up plotting margins.
     par(mar=mar)
     if(!add){
@@ -20,6 +24,8 @@ BasicPlot <- function(depth,      # a vector of depth values
         axis(3)
         if(!is.null(xtitle))
             mtext(xtitle, side=3, line=2)
+        if(!is.null(legend))
+            legend(legendpos, legend=legend, bty=bty)
     } else 
         points(var, depth, type=type, ...)
 }
