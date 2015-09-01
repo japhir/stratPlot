@@ -2,26 +2,28 @@
 # Ilja Kocken
 # Student of Marine Sciences at Utrecht University
 # First version: 2014-04-11
-# Latest version: 2015-08-31
+# Latest version: 2015-09-01
 
 # Creates a plot based on depth and one variable (DepthPlotter calls this function)
 BasicPlot <- function(depth,      # a vector of depth values
                       var,        # a vector of the variable
                       add=FALSE,  # whether or not to add the plot to the current plot
-                      type="o",   
-                      ylab=Depth~(m), 
-                      xtitle="",
-                      ylim=c(max(depth, na.rm=TRUE), min(depth, na.rm=TRUE)), 
-                      legend=NULL,
-                      legendpos="topright",
-                      bty="n",
-                      mar=c(2, 5, 5, 2) + 0.1, 
+                      type="o",   # default type
+                      ylab=Depth~(m), # default ylab
+                      xtitle="",  # default xlab
+                      ylim=c(max(depth, na.rm=TRUE), min(depth, na.rm=TRUE)),# default ylim
+                      legend=NULL,# default no legend
+                      legendpos="topright", # default legend position
+                      bty="n",    # default legend box type 
+                      mar=c(2, 5, 5, 2) + 0.1, # default plot margins
+                      xax=TRUE,   # logical, draw x-axis
                       ...){
     # set up plotting margins.
     par(mar=mar)
     if(!add){
         plot(var, depth, ylim=ylim, type=type, xaxt="n", xlab="", ylab=ylab, ...)
-        axis(3)
+        if(xax) 
+            axis(3)
         if(!is.null(xtitle))
             mtext(xtitle, side=3, line=2)
         if(!is.null(legend))
