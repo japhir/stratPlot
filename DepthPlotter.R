@@ -9,7 +9,7 @@ BasicPlot <- function(depth,      # a vector of depth values
                       var,        # a vector of the variable
                       add=FALSE,  # whether or not to add the plot to the current plot
                       type="o",   # default type
-                      ylab=Depth~(m), # default ylab
+                      ylab="Depth (mbsf)", # default ylab
                       xtitle="",  # default xlab
                       ylim=c(max(depth, na.rm=TRUE), min(depth, na.rm=TRUE)),# default ylim
                       legend=NULL,# default no legend
