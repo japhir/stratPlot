@@ -77,12 +77,8 @@ DepthPlotter.data.frame <- function(
     }
     
     # only one variable in the dataframe var
-    if((!is.null(ncol(var)) & ncol(var) == 1) | is.null(ncol(var))) 
-        # something still not working here!
-        #  Error in if ((!is.null(ncol(var)) & ncol(var) == 1) | is.null(ncol(var))) return(DepthPlotter(var,  : 
-        #  argument is of length zero 
-        return(DepthPlotter(var, depth, xlab = xlab, ...))       
-
+    if(is.null(ncol(var)))
+        return(DepthPlotter(var, depth, xlab = xlab, ...))
     # multiple variables
     # everything in one plot
     invisible(      # hide output, such as lists of NULL from lapply
@@ -110,9 +106,11 @@ DepthPlotter.data.frame <- function(
     ) # end of invisible
 }
 
-AreaPlotter <- function(var, ...){
+# experimental function that allows filled plots to be made
+AreaPlotter <- function(var, depthcol=1, ...){
     DepthPlotter(var, type="n", ...)
-    depth <- c(depth, rev(depth))
+    depth <- c(var[ , depthcol], rev(var[ , depthcol]))
+    var   <- var[ , -depthcol]
     var   <- c(rep(0, length(var)), rev(var))
     polygon(var, depth, ...)
 }
