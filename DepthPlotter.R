@@ -13,6 +13,7 @@ DepthPlotter.default <- function(
     var,                       # a vector of the variable values
     depth,                     # a vector of depth values
     add = FALSE,               # logical, add the plot to the current plot
+    errorbars = vector(),      # vector of errors to plot
     xax = TRUE,                # logical, draw x-axis
     type = "o",                # default type
     ylab = "Depth (mbsf)",     # default ylab
@@ -25,7 +26,7 @@ DepthPlotter.default <- function(
     ...){                      # possible additional plotting/legend parameters
     # set up plotting margins.
     par(mar = mar)
-    if(add){ # add to existing plot
+    if (add) { # add to existing plot
         points(var, depth, type = type, ...)
     } else { # create a new plot
         plot(var, depth, ylim = ylim, type = type, xaxt = "n", 
@@ -36,8 +37,10 @@ DepthPlotter.default <- function(
             mtext(xlab, side=3, line=2)
         if(!is.null(legend))
             legend(legendpos, legend = legend, bty = bty, ...)
-    } 
-       
+    }
+    if (length(errorbars) > 0) {
+        segments(var - errorbars, depth, var + errorbars, depth)
+    }
 }
 
 # Takes a dataframe of one or multiple variable(s) to  create a (set of) plot(s)
