@@ -13,7 +13,9 @@ DepthPlotter.default <- function(
     var,                       # a vector of the variable values
     depth,                     # a vector of depth values
     add = FALSE,               # logical, add the plot to the current plot
-    errorbars = numeric(),      # vector of errors to plot
+    errorbars = numeric(),     # vector of errors to plot as bars
+    errorregion = numeric(),   # vector of errors to plot as region
+    errcol = adjustcolor("gray", alpha.f = 0.3), # colour of errorbars/region
     xax = TRUE,                # logical, draw x-axis
     type = "o",                # default type
     ylab = "Depth (mbsf)",     # default ylab
@@ -39,7 +41,18 @@ DepthPlotter.default <- function(
             legend(legendpos, legend = legend, bty = bty, ...)
     }
     if (length(errorbars) > 0) {
-        segments(var - errorbars, depth, var + errorbars, depth)
+        segments(var - errorbars, depth, var + errorbars, depth, col = errcol)
+    }
+    if (length(errorregion) > 0) {
+        # strip NA's
+        x <- var[!is.na(var) & !is.na(depth)]
+        y <- depth[!is.na(var) & !is.na(depth)]
+        # draw the polygon around the data
+        polygon(x = c(var - errorregion, rev(var + errorregion)),
+                y = c(depth, rev(depth)), col = errcol, ...)
+        # unfortunately it removes the data so redraw that
+        DepthPlotter(var, depth, add = TRUE, errorbars = numeric(),
+                     errorregion = numeric(), type = type, ...)
     }
 }
 
@@ -52,7 +65,9 @@ DepthPlotter.data.frame <- function(
     oneplot = FALSE,      # logical, if TRUE plot all variables in the same plot
     depthcol = 1,         # the column no. in var that specifies the depth
     sscols = 1:ncol(var), # specifies columns of var to subset
-    errorbars = numeric(), # 
+    errorbars = numeric(),     # vector of errors to plot as bars 
+    errorregion = numeric(),   # vector of errors to plot as region
+    errcol = "gray",           # colour of errorbars/region
     ...){
  
     var <- var[, c(sscols)] # subset only columns of interest   
@@ -110,7 +125,7 @@ DepthPlotter.data.frame <- function(
     else if(length(xlab) == ncol(var))      
         lapply(1:ncol(var), function(i) { 
             DepthPlotter(var[ , i], depth, xlab = xlab[[i]],
-                         errorbars = errorbars, ...)})
+                         errorbars = errorbars, errcols = "black", ...)})
     ) # end of invisible
 }
 
