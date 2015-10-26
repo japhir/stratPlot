@@ -52,7 +52,7 @@ DepthPlotter.data.frame <- function(
     oneplot = FALSE,      # logical, if TRUE plot all variables in the same plot
     depthcol = 1,         # the column no. in var that specifies the depth
     sscols = 1:ncol(var), # specifies columns of var to subset
-    errorbars = numeric() # 
+    errorbars = numeric(), # 
     ...){
  
     var <- var[, c(sscols)] # subset only columns of interest   
