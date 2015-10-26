@@ -13,7 +13,7 @@ DepthPlotter.default <- function(
     var,                       # a vector of the variable values
     depth,                     # a vector of depth values
     add = FALSE,               # logical, add the plot to the current plot
-    errorbars = vector(),      # vector of errors to plot
+    errorbars = numeric(),      # vector of errors to plot
     xax = TRUE,                # logical, draw x-axis
     type = "o",                # default type
     ylab = "Depth (mbsf)",     # default ylab
@@ -52,6 +52,7 @@ DepthPlotter.data.frame <- function(
     oneplot = FALSE,      # logical, if TRUE plot all variables in the same plot
     depthcol = 1,         # the column no. in var that specifies the depth
     sscols = 1:ncol(var), # specifies columns of var to subset
+    errorbars = numeric() # 
     ...){
  
     var <- var[, c(sscols)] # subset only columns of interest   
@@ -81,31 +82,35 @@ DepthPlotter.data.frame <- function(
     
     # only one variable in the dataframe var
     if(is.null(ncol(var)))
-        return(DepthPlotter(var, depth, xlab = xlab, ...))
+        return(DepthPlotter(var, depth, xlab = xlab, errorbars = errorbars, ...))
     # multiple variables
     # everything in one plot
     invisible(      # hide output, such as lists of NULL from lapply
     if(oneplot){
         rangeofall <- c(min(var, na.rm = TRUE), max(var, na.rm = TRUE))
         # plot the first variable
-        DepthPlotter(var[ , 1], depth, xlim=rangeofall, xlab = xlab, ...) 
+        DepthPlotter(var[, 1], depth, xlim=rangeofall, xlab = xlab,
+                     errorbars = errorbars, ...) 
         # add the other variables
         lapply(2:ncol(var), function(i) {
-            DepthPlotter(var[ , i], depth, add = TRUE, ...)
+            DepthPlotter(var[ , i], depth, add = TRUE, errorbars = errorbars, ...)
         })
     # multiple plots
     } else if(xlab == ""){ 
     # no or wrong xlab 
         lapply(1:ncol(var), function(i) { 
-            DepthPlotter(var[ , i], depth, xlab = names(var)[i], ...)
+            DepthPlotter(var[ , i], depth, xlab = names(var)[i],
+                         errorbars = errorbars, ...)
         })
     } else if(length(xlab) == 1) # multiplot with provided xlab repeated
         lapply(1:ncol(var), function(i) { 
-            DepthPlotter(var[ , i], depth, xlab = xlab, ...)})
+            DepthPlotter(var[ , i], depth, xlab = xlab,
+                         errorbars = errorbars, ...)})
     # multiple xlabs
     else if(length(xlab) == ncol(var))      
         lapply(1:ncol(var), function(i) { 
-            DepthPlotter(var[ , i], depth, xlab = xlab[[i]], ...)})
+            DepthPlotter(var[ , i], depth, xlab = xlab[[i]],
+                         errorbars = errorbars, ...)})
     ) # end of invisible
 }
 
