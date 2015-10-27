@@ -15,7 +15,8 @@ DepthPlotter.default <- function(
     add = FALSE,               # logical, add the plot to the current plot
     errorbars = numeric(),     # vector of errors to plot as bars
     errorregion = numeric(),   # vector of errors to plot as region
-    errcol = adjustcolor("gray", alpha.f = 0.3), # colour of errorbars/region
+    errcol = "gray",           # colour of errorbars/region
+    erralpha = 0.3,
     xax = TRUE,                # logical, draw x-axis
     type = "o",                # default type
     ylab = "Depth (mbsf)",     # default ylab
@@ -41,15 +42,20 @@ DepthPlotter.default <- function(
             legend(legendpos, legend = legend, bty = bty, ...)
     }
     if (length(errorbars) > 0) {
+       # create errorcolor
+        errcol <- adjustcolor(errcol, alpha.f = erralpha)
         segments(var - errorbars, depth, var + errorbars, depth, col = errcol)
     }
     if (length(errorregion) > 0) {
+        # create errorcolor
+        errcol <- adjustcolor(errcol, alpha.f = erralpha)
         # strip NA's
         x <- var[!is.na(var) & !is.na(depth)]
+        x <- c(var - errorregion, rev(var + errorregion))
         y <- depth[!is.na(var) & !is.na(depth)]
+        y <- c(depth, rev(depth))
         # draw the polygon around the data
-        polygon(x = c(var - errorregion, rev(var + errorregion)),
-                y = c(depth, rev(depth)), col = errcol, ...)
+        polygon(x = x, y = y, col = errcol, border = NA) # currently no border
         # unfortunately it removes the data so redraw that
         DepthPlotter(var, depth, add = TRUE, errorbars = numeric(),
                      errorregion = numeric(), type = type, ...)
@@ -68,6 +74,7 @@ DepthPlotter.data.frame <- function(
     errorbars = numeric(),     # vector of errors to plot as bars 
     errorregion = numeric(),   # vector of errors to plot as region
     errcol = "gray",           # colour of errorbars/region
+    erralpha = 0.3,
     ...){
  
     var <- var[, c(sscols)] # subset only columns of interest   
