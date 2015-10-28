@@ -41,24 +41,44 @@ DepthPlotter.default <- function(
         if(!is.null(legend))
             legend(legendpos, legend = legend, bty = bty, ...)
     }
+    if (length(errorbars > 0) | length(errorregion) > 0)
+        errcol <- adjustcolor(errcol, erralpha)
     if (length(errorbars) > 0) {
-       # create errorcolor
-        errcol <- adjustcolor(errcol, alpha.f = erralpha)
         segments(var - errorbars, depth, var + errorbars, depth, col = errcol)
     }
     if (length(errorregion) > 0) {
-        # create errorcolor
-        errcol <- adjustcolor(errcol, alpha.f = erralpha)
-        # strip NA's
-        x <- var[!is.na(var) & !is.na(depth)]
-        x <- c(var - errorregion, rev(var + errorregion))
-        y <- depth[!is.na(var) & !is.na(depth)]
-        y <- c(depth, rev(depth))
-        # draw the polygon around the data
-        polygon(x = x, y = y, col = errcol, border = NA) # currently no border
+        PlotErrorArea(var = var, depth = depth, errorregion = errorregion,
+                      col = errcol)
         # unfortunately it removes the data so redraw that
-        DepthPlotter(var, depth, add = TRUE, errorbars = numeric(),
-                     errorregion = numeric(), type = type, ...)
+#        DepthPlotter(var, depth, add = TRUE, errorbars = numeric(),
+#                    errorregion = numeric(), type = type, ...)
+    }
+}
+
+PlotErrorArea <- function(var, depth, errorregion, col = adjustcolor("gray", .3)) {
+                                        # adds an errorregion to a variable
+    if (anyNA(var) | anyNA(depth)) {
+        enc <- rle(!is.na(var))             # calculate amount of non-NA polygons
+        endIdxs <- cumsum(enc$lengths)      # lengths of polygons
+        for(i in 1:length(enc$lengths)){    # for each polygon
+            if(enc$values[i]){              # for non-na regions
+                endIdx <- endIdxs[i]
+                startIdx <- endIdx - enc$lengths[i] + 1
+            
+                subdat <- var[startIdx:endIdx]
+                subsd <- errorregion[startIdx:endIdx]
+                subdepth <- depth[startIdx:endIdx]
+
+                x <- c(subdat - subsd, rev(subdat + subsd))
+                y <- c(subdepth, rev(subdepth))
+                                        # Draw the polygon
+                polygon(x = x, y = y, col = col, border = NA)
+            }
+        }
+    } else {
+        x <- c(var - errorregion, rev(var + errorregion))
+        y <- c(depth, rev(depth))
+        polygon(x = x, y = y, col = col, border = NA)
     }
 }
 
