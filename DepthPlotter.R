@@ -55,7 +55,7 @@ DepthPlotter.default <- function(
     }
 }
 
-PlotErrorArea <- function(var, depth, errorregion, col = adjustcolor("gray", .3)) {
+PlotErrorArea <- function(var, depth, errorregion, hor = TRUE, col = adjustcolor("gray", .3)) {
                                         # adds an errorregion to a variable
     if (anyNA(var) | anyNA(depth)) {
         enc <- rle(!is.na(var))             # calculate amount of non-NA polygons
@@ -71,15 +71,14 @@ PlotErrorArea <- function(var, depth, errorregion, col = adjustcolor("gray", .3)
 
                 x <- c(subdat - subsd, rev(subdat + subsd))
                 y <- c(subdepth, rev(subdepth))
-                                        # Draw the polygon
-                polygon(x = x, y = y, col = col, border = NA)
             }
         }
     } else {
         x <- c(var - errorregion, rev(var + errorregion))
         y <- c(depth, rev(depth))
-        polygon(x = x, y = y, col = col, border = NA)
     }
+    polygon(x = x, y = y, col = col, border = NA)
+ 
 }
 
 # Takes a dataframe of one or multiple variable(s) to  create a (set of) plot(s)
@@ -163,4 +162,8 @@ AreaPlotter <- function(var, depthcol=1, ...){
     var   <- var[ , -depthcol]
     var   <- c(rep(0, length(var)), rev(var))
     polygon(var, depth, ...)
+}
+
+SubSetRange <- function(dat, min, max, column = "depth") {
+    dat[dat[, column] > min & dat[, column] < max, ]
 }
