@@ -167,3 +167,7 @@ AreaPlotter <- function(var, depthcol=1, ...){
 SubSetRange <- function(dat, min, max, column = "depth") {
     dat[dat[, column] > min & dat[, column] < max, ]
 }
+
+AgePlotter <- function(var, ...){
+    DepthPlotter(var = var, ylab = Age~(Mya), ...)
+}
