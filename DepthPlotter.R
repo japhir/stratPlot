@@ -2,7 +2,7 @@
 # Ilja Kocken
 # Student of Marine Sciences at Utrecht University
 # First version: 2014-04-11
-# Latest version: 2015-09-13
+# Latest version: 2016-04-06
 
 SuperPlot <- function(var, ...){
     UseMethod("SuperPlot", var)
