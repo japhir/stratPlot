@@ -1,8 +1,8 @@
-# Super easy depth plotting in R
+# Super easy plotting of paleodata in R
 # Ilja Kocken
 # Student of Marine Sciences at Utrecht University
 # First version: 2014-04-11
-# Latest version: 2016-04-06
+# Latest version: 2016-04-24
 
 SuperPlot <- function(var, ...){
     UseMethod("SuperPlot", var)
@@ -19,29 +19,30 @@ SuperPlot.default <- function(
     xax = 3,                   # draw x-axis, 1 for bot, 3 for top, NA for none
     type = "o",                # default type
     pb = "n",                  # plot bars and/or area using "P", "PB" or "B"
-    left = par("usr")[1],      # from where are area and bars are drawn
+    left = 0, #par("usr")[1],  # from where are area and bars are drawn
     fillcol = "steelblue",     # colour of silhouette 
     ylab = "Depth (mbsf)",     # default ylab
     xlab = "",                 # default xlab xtitle
     ylim = c(max(yvar, na.rm=TRUE), min(yvar, na.rm=TRUE)), # default ylim
-    legend = FALSE,             # default no legend
+    legend = FALSE,            # default no legend
     legendpos = "topright",    # default legend position
-    bty = "n",                 # default legend box type 
-    mar = c(2, 5, 5, 2) + 0.1, # bottom, left, top and right margins
+    bty = "n",                 # default legend and plot box type 
+    mar = c(2, 5, 5, 2) + .1,  # bottom, left, top and right margins
     ...){                      # possible additional plotting/legend parameters
+
   # set up plotting margins.
-  if (identical(xax, 1) && identical(mar, c(2, 5, 5, 2) + 0.1))  # if default, override for bot
-    mar <- c(5, 5, 2, 2) + 0.1
+  if (identical(xax, 1) && identical(mar, c(2, 5, 5, 2) + .1))  # if default, override for bot
+    mar <- c(5, 5, 2, 2) + .1
+  else if (identical(xax, c(1,3)) && identical(mar, c(2, 5, 5, 2) + .1))
+    mar <- c(5, 5, 5, 2) + .1
   par(mar = mar)
   
   if (!add) {  # create empty plot
-    plot(var, yvar, ylim = ylim, type = "n", xaxt = "n", xlab = "", ylab = ylab, ...)
+    plot(var, yvar, ylim = ylim, type = "n", xaxt = "n", xlab = "", ylab = ylab, bty = bty, ...)
     if(xax %in% c(1,3)) 
       axis(xax)
     if(!is.null(xlab) && xax %in% c(1,3))
       mtext(xlab, side = xax, line=2)
-    if(legend)
-      legend(legendpos, legend = legend, bty = bty, ...)
   }
   if (pb == "PB" || pb == "BP") { # for polygon and bars
     area <- TRUE
@@ -95,6 +96,8 @@ SuperPlot.default <- function(
     segments(x0 = rep(left, length(var)), y0 = yvar, x1 = var)
   }
   points(var, yvar, type = type, ...)  # plot main line
+  if(legend)
+    legend(legendpos, legend = legend, bty = bty, ...)
 }
 
 
@@ -162,7 +165,9 @@ SuperPlot.data.frame <- function(
     errorcol = adjustcolor("gray", alpha = 0.9),  # colour of errorbars/region
     ...) {
   var <- var[, c(sscols)] # subset only columns of interest   
-  # parameter validation
+  #subset numeric columns
+  var <- var[, sapply(var, is.numeric)]
+    # parameter validation
   if(!is.null(yvar)){
     warning("Assuming only variables in dataframe")
   } else { # only var is provided
