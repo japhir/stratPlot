@@ -36,11 +36,10 @@ SuperPlot.default <- function(
   else if (identical(xax, c(1,3)) && identical(mar, c(2, 5, 5, 2) + .1))
     mar <- c(5, 5, 5, 2) + .1
   par(mar = mar)
-  
   if (!add) {  # create empty plot
     plot(var, yvar, ylim = ylim, type = "n", xaxt = "n", xlab = "", ylab = ylab, bty = bty, ...)
-    if(xax %in% c(1,3)) 
-      axis(xax)
+    if(identical(xax, c(1,3)) || identical(xax, 1) || identical(xax, 3)) 
+      lapply(xax, axis)
     if(!is.null(xlab) && xax %in% c(1,3))
       mtext(xlab, side = xax, line=2)
   }
