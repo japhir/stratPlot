@@ -4,21 +4,24 @@
 # First version: 2014-04-11
 # Latest version: 2016-05-28
 
-SuperPlot <- function(var, ...){
-    UseMethod("SuperPlot", var)
+stratPlot <- function(var, ...){
+    UseMethod("stratPlot", var)
 }
 
 # Creates a plot based on a depth/age vector and a variable vector
-SuperPlot.numeric <- function(var,           # numeric vector
+stratPlot.numeric <- function(var,           # numeric vector
                               age = NULL,    # optional numeric vector 
                               agedir = "h",  # "v", "ver", "vertical" or "h" "hor" "horizontal" 
                               pb = "n",        # polygon/bar
+                              # gapmaker = NULL, # TODO
                               oneplot = FALSE, # logical, if TRUE plot all variables in the same plot
                               add = FALSE,     # logical, add to plot or start new one
                               error = NULL,    # vector of errors to plot (note: relative values!)
                               stacked = FALSE, # logical, calculate cumulative sum for vars
                               xax = if (agedir == "h") 1 else 3, # default position of x-axis
                               yax = 2,         # default position of yaxis
+                              # TODO: add gapmaker limit
+                              # TODO: add standard Geologic Time Scale to region near x or y axis
                               ...,
                               mar = NULL,      # generated based on xax and yax
                               ylab = NULL, xlab = NULL, xlim = NULL,
@@ -30,10 +33,12 @@ SuperPlot.numeric <- function(var,           # numeric vector
   if (length(var) != length(age)) {
     stop("Unequal length of var and age")
   }
-  if (!is.numeric(var))
-    as.numeric(var)
-  if (!is.numeric(age))
-    as.numeric(age)
+
+  # TODO
+  # check gapmaker with vectors?
+  #if (!is.null(gapmaker)) {
+  #  gapMaker()
+  #}
   
   # check agedir
   if (!agedir %in% c("v", "ver", "vertical", "h", "hor", "horizontal")) {
@@ -153,9 +158,9 @@ SuperPlot.numeric <- function(var,           # numeric vector
   
   if (length(error) > 0) {  # plot errorstuff
     if(errortype == "bars") {
-      PlotErrorBars(var, age, error, errorcol = errorcol, age = age)
+      errorBarsPlot(var, age, error, errorcol = errorcol, age = age)
     } else if (errortype == "area")
-      PlotErrorArea(var, age, error, col = errorcol, age = age)
+      errorAreaPlot(var, age, error, col = errorcol, age = age)
   }
 
   # plot PB bars (added after errors to overlap the possible areas)
@@ -179,7 +184,7 @@ SuperPlot.numeric <- function(var,           # numeric vector
 }
 
 
-PlotErrorBars <- function(var, age, errorbars,
+errorBarsPlot <- function(var, age, errorbars,
                           errorwidth = diff(range(age))/100,
                           errorcol = adjustcolor("gray", alpha = 0.9),
                           agedir = "h") {
@@ -215,7 +220,7 @@ PlotErrorBars <- function(var, age, errorbars,
   }
 }
 
-PlotErrorArea <- function(var, age, errorregion, hor = TRUE,
+errorAreaPlot <- function(var, age, errorregion, hor = TRUE,
                           col = adjustcolor("gray", .3), agedir = "h") {
   # adds an errorregion to a variable
   # TODO: still/again? not working with NAs
@@ -252,10 +257,11 @@ PlotErrorArea <- function(var, age, errorregion, hor = TRUE,
 }
 
 # Takes a dataframe of one or multiple variable(s) to  create a (set of) plot(s)
-SuperPlot.data.frame <- function(var, # dataframe
+stratPlot.data.frame <- function(var, # dataframe
                                  age = NULL, # optional vector 
                                  agedir = "h",  # "v", "ver", "vertical" or "h" "hor" "horizontal" 
-                                 pb = "n",     # polygon/bar
+                                 pb = "n",        # polygon/bar
+                                 gapsize = NULL,  # lines not drawn for timesteps > gapsize
                                  oneplot = FALSE, # logical, if TRUE plot all variables in the same plot
                                  genframe = TRUE, # show plots in same window
                                  add = FALSE,
@@ -289,6 +295,7 @@ SuperPlot.data.frame <- function(var, # dataframe
     if (length(age) != nrow(var)) {
       stop("Length of age is unequal to nrow(var)")
     }
+    # TODO add gapmaker support!
     message("Assuming only variables in dataframe")
   } else { # only var is provided
     # find value that has age
@@ -297,17 +304,33 @@ SuperPlot.data.frame <- function(var, # dataframe
     agecol <- grep("age", names(var), ignore.case = TRUE)
     if (length(agecol) > 1) warning("multiple age columns found, using first")
     if (length(depthcol) >= 1 && length(agecol) == 0) {
+      # check gapsize
+      if (!is.null(gapsize)) {
+        var <- gapMaker(var, gapsize = gapsize, varname = depthcol[1])
+      }
       age <- var[, depthcol[1]]
       var <- var[, -depthcol[1]]
     } else if (length(depthcol) == 0 && length(agecol) >= 1) {
+      # check gapsize
+      if (!is.null(gapsize)) {
+        var <- gapMaker(var, gapsize = gapsize, varname = agecol[1])
+      }
       age <- var[, agecol[1]]
       var <- var[, -agecol[1]]
     } else if (length(depthcol) > 0 && length(agecol) > 0) {
       # TODO: interactive selection of desired age
+      # check gapsize
+      if (!is.null(gapsize)) {
+        var <- gapMaker(var, gapsize = gapsize, varname = agecol[1])
+      }
       age <- var[, agecol[1]]  # for now we just use age if both are available
       # omit depth and age
       var <- var[, - c(depthcol[1], agecol[1])] 
-    } else { # no depthcol, no agecol found: use first column 
+    } else { # no depthcol, no agecol found: use first column
+      # check gapsize
+      if (!is.null(gapsize)) {
+        var <- gapMaker(var, gapsize = gapsize, varname = agecol[1])
+      }
       age  <- var[,  1]
       var  <- var[, -1]
       message("Assuming age or depth in first column of var")
@@ -389,7 +412,7 @@ SuperPlot.data.frame <- function(var, # dataframe
 
   # TODO: also do this for bty?, errortype, errorcol, pol0 and border?
  
-  # call SuperPlot.numeric, multiple times if necessary
+  # call stratPlot.numeric, multiple times if necessary
   if (!oneplot && genframe) {
     if (agedir == "h") {
       par(mfrow = c(ncol(var), 1))
@@ -399,7 +422,7 @@ SuperPlot.data.frame <- function(var, # dataframe
   }
   
   for (i in seq_along(var)) {
-    SuperPlot(if (stacked) rowSums(var[, 1:i]) else var[, i], age, agedir, pb,
+    stratPlot(if (stacked) rowSums(var[, 1:i]) else var[, i], age, agedir, pb,
               add = if (oneplot && i == 1) TRUE else FALSE, error = error,
               xax = xax, yax = yax, mar = mar,
               ylab = if (exists("ylabs")) ylab[i] else ylab,
@@ -422,8 +445,27 @@ SuperPlot.data.frame <- function(var, # dataframe
   }
 }
 
-SubSetRange <- function(dat, min, max, column = "depth") {
+# subset dataframe to range of age/depth
+subsetRange <- function(dat, min, max, column = "depth") {
   return(dat[dat[, column] > min && dat[, column] < max, ])
+}
+
+# insert empty rows between values that differ more than gapsize
+gapMaker <- function(df, gapsize = .5, varname = "age") {
+  toolarge <- which(diff(df[, varname]) > gapsize)
+  df <- insertEmpty(df, toolarge)
+  return(df)
+}
+
+# insert empty rows in df after afterrow
+insertEmpty <- function(df, afterrow) {
+  # create indices for the data order
+  df$id <- seq_len(nrow(df))
+  df[max(df$id) + seq_along(afterrow), ] <- NA
+  df$id[is.na(df$id)] <- afterrow + .5
+  df <- df[order(df$id), ]
+  df <- df[ , !names(df) %in% "id"]
+  return(df)
 }
 
 
