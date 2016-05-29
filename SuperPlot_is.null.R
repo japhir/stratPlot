@@ -18,12 +18,12 @@ SuperPlot.numeric <- function(var,           # numeric vector
                               error = NULL,    # vector of errors to plot (note: relative values!)
                               stacked = FALSE, # logical, calculate cumulative sum for vars
                               xax = if (agedir == "h") 1 else 3, # default position of x-axis
-                              ...,
                               yax = 2,         # default position of yaxis
+                              ...,
                               mar = NULL,      # generated based on xax and yax
                               ylab = NULL, xlab = NULL, xlim = NULL,
-                              ylim = NULL, bty = "n", col = "black", lwd = 1,
-                              lty = 1, type = "o", pch = 16, errortype = NULL,
+                              ylim = NULL, bty = "n", 
+                              type = "o", pch = 16, errortype = NULL,
                               errorcol = NULL, pol0 = NULL, fillcol = NULL,
                               border = NULL, legend = NULL) {
   # check var and age
@@ -128,19 +128,19 @@ SuperPlot.numeric <- function(var,           # numeric vector
       nona <- nona[complete.cases(nona), ]
       x <- c(nona$age[1], nona$age, tail(nona$age, n = 1))
       y <- c(pol0, nona$var, pol0)
-        # TODO: create polygons per non-NA region, like we do with errorregion
-        #      enc <- rle(!is.na(var))
-        #     endIdxs <- cumsum(enc$lengths)
-        #    for (i in 1:length(enc$lengths)) {
-        #     if (enc$values[i]) {
-        #      endIdx <- endIdxs[i]
-        #     startIdx <- endIdx - enc$lengths[i] + 1
-        #    subvar <- var[startIdx:endIdx]
-        #  subage <- age[startIdx:endIdx]
-        #   x <- c(left, subvar, left)
-        # y <- c(subage[1], age, tail(age, n = 1))
-        #}
-        #}
+      # TODO: create polygons per non-NA region, like we do with errorregion
+      # enc <- rle(!is.na(var))
+      # endIdxs <- cumsum(enc$lengths)
+      # for (i in 1:length(enc$lengths)) {
+      #   if (enc$values[i]) {
+      #     endIdx <- endIdxs[i]
+      #     startIdx <- endIdx - enc$lengths[i] + 1
+      #     subvar <- var[startIdx:endIdx]
+      #     subage <- age[startIdx:endIdx]
+      #     x <- c(left, subvar, left)
+      #     y <- c(subage[1], age, tail(age, n = 1))
+      #   }
+      # }
     } else {
         # not sure if I want to use the current left or use:
         # min(var, na.rm = TRUE) - .04 * diff(range(var, na.rm = TRUE))
@@ -163,18 +163,19 @@ SuperPlot.numeric <- function(var,           # numeric vector
     segments(x0 = if (agedir == "h") age else rep(pol0, length(var)),
              y0 = if (agedir == "h") rep(pol0, length(var)) else age,
              x1 = if (agedir == "h") age else var,
-             y1 = if (agedir == "h") var else age, ...)
+             y1 = if (agedir == "h") var else age) # currenlty no extra options!
+    # TODO add barcol, barlwd etc?
   }
   
   # plot the actual record
   points(x = if (agedir == "h") age else var,
-         y = if (agedir == "h") var else age, type = type, col = col,
-         pch = pch, lty = lty, lwd = lwd, ...)
+         y = if (agedir == "h") var else age, type = type,
+         pch = pch, ...)
   
   # plot a legend of one variable... is this necessary?
   if(!is.null(legend))
-    legend("topright", legend = legend, bty = bty, lty = lty, lwd = lwd,
-           pch = pch)
+    legend("topright", legend = legend, bty = bty, lty = lty, 
+           pch = pch, ...)
 }
 
 
