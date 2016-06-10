@@ -2,7 +2,7 @@
 # Ilja Kocken
 # Student of Marine Sciences at Utrecht University
 # First version: 2014-04-11
-# Latest version: 2016-05-28
+# Latest version: 2016-06-09
 
 stratPlot <- function(var, ...){
     UseMethod("stratPlot", var)
@@ -226,48 +226,66 @@ stratPlot.numeric <- function(var,           # numeric vector
 }
 
 
-errorBarsPlot <- function(var, age, error,
+errorBarsPlot <- function(var, age, error, 
                           width = diff(range(age)) / 100,
                           col = adjustcolor("gray", alpha = 0.9),
                           agedir = "h") {
-  if (!(length(error) == length(var) || length(error) == 1))
-    warning("Length of error not equal to var length, recycling")
-  if (agedir == "h") {
-  # plot the error themselves
-    arrows(x0 = age, y0 = var - 0.5 * error, x1 = age,
-           y1 = var + 0.5 * error, col = col, length = 0.05,
-           angle = 90, code = 3)
-  }
-  else if (agedir == "v") {
-    # plot the error themselves
-    arrows(x0 = var - 0.5 * error, y0 = age, x1 = var + 0.5 * error,
-           y1 = age, col = col, length = 0.05, angle = 90, code = 3)
+  # if error is provided as dataframe/matrix of errorvalues
+  if (length(var) != 2 && length(error) == 2)
+    error <- rbind(error)
+  if (ncol(error) == 2) {
+    if (!(nrow(error) == 1 || nrow(error) == length(var)))
+      warning("Number of rows in error not equal to var length, recycling")
+    if (agedir == "h")
+      arrows(age, error[, 1], age, error[,2], col = col, length = 0.05,
+             angle = 90, code = 3)
+    else if (agedir == "v")
+      arrows(error[, 1], age, error[, 2], age, col = col, length = 0.05,
+             angle = 90, code = 3)
+  } else {
+    if (!(length(error) == length(var) || length(error) == 1))
+      warning("Length of error not equal to var length, recycling")
+    if (agedir == "h") {
+      arrows(x0 = age, y0 = var - 0.5 * error, x1 = age,
+             y1 = var + 0.5 * error, col = col, length = 0.05,
+             angle = 90, code = 3)
+    }
+    else if (agedir == "v") {
+      arrows(x0 = var - 0.5 * error, y0 = age, x1 = var + 0.5 * error,
+             y1 = age, col = col, length = 0.05, angle = 90, code = 3)
+    }
   }
 }
 
 errorAreaPlot <- function(var, age, error, 
                           col = adjustcolor("gray", .3), agedir = "h") {
-  # adds an errorregion to a variable
-  # TODO: errorregion something is totally bugging out here, fix it!
-  if (anyNA(var) | anyNA(age)) {
-    enc <- rle(!is.na(var))             # calculate amount of non-NA polygons
-    endIdxs <- cumsum(enc$lengths)      # lengths of polygons
-    for (i in seq_along(enc$lengths)){  # for each polygon
-      if(enc$values[i]){                # for non-na regions
-        endIdx <- endIdxs[i]
-        startIdx <- endIdx - enc$lengths[i] + 1
-        
-        subdat <- var[startIdx:endIdx]
-        subsd <- errorregion[startIdx:endIdx]
-        subage <- age[startIdx:endIdx]
-        
-        x <- c(subdat - subsd, rev(subdat + subsd))
-        y <- c(subage, rev(subage))
+  if (ncol(error) == 2) {
+    # TODO: support for NA values in age when specifying strict errorvalues
+    if (!(nrow(error) == 1 || nrow(error) == length(var)))
+      warning("Number of rows in error not equal to var length, recycling")
+    x <- c(age, rev(age))
+    y <- c(error[,1], error[,2])
+  } else {
+    if (anyNA(var) | anyNA(age)) {
+      enc <- rle(!is.na(var))             # calculate amount of non-NA polygons
+      endIdxs <- cumsum(enc$lengths)      # lengths of polygons
+      for (i in seq_along(enc$lengths)){  # for each polygon
+        if(enc$values[i]){                # for non-na regions
+          endIdx <- endIdxs[i]
+          startIdx <- endIdx - enc$lengths[i] + 1
+          
+          subdat <- var[startIdx:endIdx]
+          subsd <- error[startIdx:endIdx]
+          subage <- age[startIdx:endIdx]
+          
+          x <- c(subdat - subsd, rev(subdat + subsd))
+          y <- c(subage, rev(subage))
         }
       }
-  } else {
-    x <- c(age, rev(age))
-    y <- c(var - .5 * error, rev(var + .5 * error))
+    } else {
+      x <- c(age, rev(age))
+      y <- c(var - .5 * error, rev(var + .5 * error))
+    }
   }
   polygon(x = if (agedir == "h") x else y, y = if (agedir == "h") y else x,
           col = col, border = NA)
