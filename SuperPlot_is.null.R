@@ -106,40 +106,9 @@ stratPlot.numeric <- function(var,           # numeric vector
     plot(c(1,1), c(1,1), type = "n", xlim = xlim, ylim = ylim, log = log,
          xlab = "", ylab = "", axes = FALSE)
 
-    # default x-axis minor tick marks
-    if (is.null(xtck)) {
-      if (length(grep("x", log)) > 0) {
-        xpow <- c(if (xlim[1] > 0) nchar(xlim[1]) -1 else nchar(xlim[1]) - 2,
-                  if (xlim[2] > 0) nchar(xlim[2]) -1 else nchar(xlim[1]) - 2) 
-        xtck <- c(1:10 %o% 10^((xpow)[1]:(xpow)[2]))
-      } else {  # non-log x-axis
-        stepsize <- abs(diff(axTicks(1)[1:2])) / xntck 
-        xtck <- seq(from = min(axTicks(1)) - stepsize * xntck,
-                    to = max(axTicks(1)) + stepsize * xntck,
-                    by = stepsize)
-      }
-    }
-    
-    # default y-axis minor tick marks
-    if (is.null(ytck)) {
-      if (length(grep("y", log)) > 0) {
-        ypow <- c(if (ylim[1] > 0) nchar(ylim[1]) -1 else nchar(ylim[1]) - 2,
-                  if (ylim[2] > 0) nchar(ylim[2]) -1 else nchar(ylim[1]) - 2) 
-        ytck <- c(1:10 %o% 10^((ypow[1]-1):(ypow[2]-1)))
-      } else {
-        stepsize <- abs(diff(axTicks(2)[1:2])) / yntck
-        ytck <- seq(from = min(axTicks(2)) - stepsize * yntck,
-                    to = max(axTicks(2)) + stepsize * yntck,
-                    by = stepsize)
-      }
-    }
-
     # default axis with values
     lapply(xax, axis)
     lapply(yax, axis)
-    # minor tick axis
-    lapply(xax, axis, at = xtck, labels = FALSE, tcl = .3)
-    lapply(yax, axis, at = ytck, labels = FALSE, tcl = .3)
     # add axis labels
     lapply(xax, function(i) { mtext(xlab, side = i, line = 2) })
     lapply(yax, function(i) { mtext(ylab, side = i, line = 2) })
@@ -154,7 +123,7 @@ stratPlot.numeric <- function(var,           # numeric vector
     bars <- FALSE
   } else if (pb == "B") { # bars
     area <- FALSE
-      bars <- TRUE
+    bars <- TRUE
   } else if (pb == "n") {
     area <- FALSE
     bars <- FALSE
@@ -164,6 +133,7 @@ stratPlot.numeric <- function(var,           # numeric vector
   if (area) { 
     if (is.null(pol0)) pol0 <- 0
     if (is.null(border)) border <- NA
+    if (is.null(fillcol)) fillcol <- adjustcolor("steelblue", .8)
     if (anyNA(var) || anyNA(age)) {
       message("NAs found in var/age, currently ignoring")
       nona <- data.frame(var = var, age = age)
@@ -195,13 +165,14 @@ stratPlot.numeric <- function(var,           # numeric vector
   
   if (length(error) > 0) {  # plot errorstuff
     if(errortype == "bars") {
-      errorBarsPlot(var, age, error, errorcol = errorcol, agedir = agedir)
+      errorBarsPlot(var, age, error, col = errorcol, agedir = agedir)
     } else if (errortype == "area")
-      errorAreaPlot(var, age, error, col = errorcol, age = age)
+      errorAreaPlot(var, age, error, col = errorcol, agedir = agedir)
   }
 
   # plot PB bars (added after errors to overlap the possible areas)
   if (bars) {
+    if (is.null(pol0)) pol0 <- 0
     segments(x0 = if (agedir == "h") age else rep(pol0, length(var)),
              y0 = if (agedir == "h") rep(pol0, length(var)) else age,
              x1 = if (agedir == "h") age else var,
@@ -213,6 +184,40 @@ stratPlot.numeric <- function(var,           # numeric vector
   points(x = if (agedir == "h") age else var,
          y = if (agedir == "h") var else age, type = type,
          pch = pch, ...)
+
+      # default x-axis minor tick marks
+    if (is.null(xtck)) {
+      if (length(grep("x", log)) > 0) {
+        xpow <- c(if (xlim[1] > 0) nchar(xlim[1]) -1 else nchar(xlim[1]) - 2,
+                  if (xlim[2] > 0) nchar(xlim[2]) -1 else nchar(xlim[1]) - 2) 
+        xtck <- c(1:10 %o% 10^((xpow)[1]:(xpow)[2]))
+      } else {  # non-log x-axis
+        stepsize <- abs(diff(axTicks(1)[1:2])) / xntck 
+        xtck <- seq(from = min(axTicks(1)) - stepsize * xntck,
+                    to = max(axTicks(1)) + stepsize * xntck,
+                    by = stepsize)
+      }
+    }
+
+  # add minor ticks later (to be plotted over polygon)
+  if (!add) {
+    # default y-axis minor tick marks
+    if (is.null(ytck)) {
+      if (length(grep("y", log)) > 0) {
+        ypow <- c(if (ylim[1] > 0) nchar(ylim[1]) -1 else nchar(ylim[1]) - 2,
+                  if (ylim[2] > 0) nchar(ylim[2]) -1 else nchar(ylim[1]) - 2) 
+        ytck <- c(1:10 %o% 10^((ypow[1]-1):(ypow[2]-1)))
+      } else {
+        stepsize <- abs(diff(axTicks(2)[1:2])) / yntck
+        ytck <- seq(from = min(axTicks(2)) - stepsize * yntck,
+                    to = max(axTicks(2)) + stepsize * yntck,
+                    by = stepsize)
+      }
+    }
+    # minor tick axis
+    lapply(xax, axis, at = xtck, labels = FALSE, tcl = .3)
+    lapply(yax, axis, at = ytck, labels = FALSE, tcl = .3)
+  }
   
   # plot a legend of one variable... is this necessary?
   if(!is.null(legend))
@@ -221,43 +226,26 @@ stratPlot.numeric <- function(var,           # numeric vector
 }
 
 
-errorBarsPlot <- function(var, age, errorbars,
-                          errorwidth = diff(range(age))/100,
-                          errorcol = adjustcolor("gray", alpha = 0.9),
+errorBarsPlot <- function(var, age, error,
+                          width = diff(range(age)) / 100,
+                          col = adjustcolor("gray", alpha = 0.9),
                           agedir = "h") {
-  # TODO also support vector of actual errors values
-  # maybe the easy var <-> age solution could work here too
-  if (agedir == "h")
-  # plot the errorbars themselves
-    segments(x0 = age, y0 = var - 0.5 * errorbars, x1 = age,
-             y1 = var + 0.5 * errorbars, col = errorcol)
-  # add whiskers
-  if (errorwidth > 0) {
-    segments(x0 = age - errorwidth,
-             y0 = var - 0.5 * errorbars,
-             x1 = age + errorwidth, col = errorcol)
-    segments(x0 = age - errorwidth,
-             y0 = var + 0.5 * errorbars,  # on the right
-             x1 = age + errorwidth, col = errorcol)
+  if (!(length(error) == length(var) || length(error) == 1))
+    warning("Length of error not equal to var length, recycling")
+  if (agedir == "h") {
+  # plot the error themselves
+    arrows(x0 = age, y0 = var - 0.5 * error, x1 = age,
+           y1 = var + 0.5 * error, col = col, length = 0.05,
+           angle = 90, code = 3)
   }
-  else if (agedir == "v")
-    # plot the errorbars themselves
-    segments(x0 = var - 0.5 * errorbars,
-             y0 = age,
-             x1 = var + 0.5 * errorbars,
-             y1 = age, col = errorcol)
-  # add whiskers
-  if (errorwidth > 0) {
-    segments(x0 = var - 0.5 * errorbars,  # on the left
-             y0 = age - errorwidth,
-             y1 = age + errorwidth, col = errorcol)
-    segments(x0 = var + 0.5 * errorbars,  # on the right
-             y0 = age - errorwidth,
-             y1 = age + errorwidth, col = errorcol)
+  else if (agedir == "v") {
+    # plot the error themselves
+    arrows(x0 = var - 0.5 * error, y0 = age, x1 = var + 0.5 * error,
+           y1 = age, col = col, length = 0.05, angle = 90, code = 3)
   }
 }
 
-errorAreaPlot <- function(var, age, errorregion, hor = TRUE,
+errorAreaPlot <- function(var, age, error, 
                           col = adjustcolor("gray", .3), agedir = "h") {
   # adds an errorregion to a variable
   # TODO: errorregion something is totally bugging out here, fix it!
@@ -273,25 +261,16 @@ errorAreaPlot <- function(var, age, errorregion, hor = TRUE,
         subsd <- errorregion[startIdx:endIdx]
         subage <- age[startIdx:endIdx]
         
-        if (agedir == "h") {
-          x <- c(subdat - subsd, rev(subdat + subsd))
-          y <- c(subage, rev(subage))
-        } else {
-          x <- c(subage, rev(subage))
-          y <- c(subdat - subsd, rev(subdat + subsd))
+        x <- c(subdat - subsd, rev(subdat + subsd))
+        y <- c(subage, rev(subage))
         }
       }
-    }
   } else {
-    if (agedir == "h") {
-      x <- c(age, rev(age))
-      y <- c(var + .5 * errorregion, rev(var - 5 * errorregion))
-    } else {
-     x <- c(var - .5 * errorregion, rev(var + .5 * errorregion))
-     y <- c(age, rev(age))
-    }
+    x <- c(age, rev(age))
+    y <- c(var - .5 * error, rev(var + .5 * error))
   }
-  polygon(x = x, y = y, col = col, border = NA)
+  polygon(x = if (agedir == "h") x else y, y = if (agedir == "h") y else x,
+          col = col, border = NA)
 }
 
 # Takes a dataframe of one or multiple variable(s) to  create a (set of) plot(s)
