@@ -1,5 +1,5 @@
-# SuperPlotter (formerly DepthPlotter)
-The SuperPlot function allows you to easily create depth and age profile plots
+# stratPlotter
+The stratPlot function allows you to easily create depth and age profile plots
 in R. 
 
 ## Usage
@@ -11,7 +11,7 @@ include depth or age information in one of the columns.
 Get it into R using `data <- read.csv("pathtofile.csv")`
 
 The simplest way to create a single plot is to give depth/age and var vectors of
-equal length, and provide a value for `xlab`.
+equal length, and provide a value for `xlab`. 
 
 Note that if you want to use superscipts and subscripts in the x-axis label, you
 can do so by providing `xlab` with a formula. For example:
