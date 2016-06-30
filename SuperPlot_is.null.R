@@ -128,8 +128,17 @@ stratPlot.numeric <- function(var,           # numeric vector
     } 
     
     ##  plot PB polygon
-    if (area) { 
-        if (is.null(pol0)) pol0 <- 0
+    if (area) {
+        ## baseline to draw polygon to
+        if (is.null(pol0)) {
+            ## logarithmic var axis -> draw polygon to minimum value
+            if ((agedir == "h" && grepl("y", log)) ||
+                (agedir == "v" && grepl("v", log))) {
+                pol0 <- min(var)
+            } else  {
+                pol0 <- 0
+            }
+        }
         if (is.null(border)) border <- NA
         if (is.null(fillcol)) fillcol <- adjustcolor("steelblue", .8)
         if (anyNA(var) || anyNA(age)) {
@@ -189,13 +198,18 @@ stratPlot.numeric <- function(var,           # numeric vector
         ## default x-axis minor tick marks
         if (is.null(xtck)) {
             if (grepl("x", log)) {
-                xpow <- c(if (xlim[1] > 0) floor(log10(xlim[1]))
-                          else - floor(log10(-xlim[1])),
-                          if (xlim[2] > 0) ceiling(log10(xlim[2]))
-                          else -ceiling(log10(-xlim[2]))) 
+                xpow <- c(
+                    if (xlim[1] == 0) -100
+                    else if (xlim[1] > 0) floor(log10(xlim[1]))
+                    else - floor(log10(-xlim[1])),
+                    if (xlim[2] == 0) -100
+                    else if (xlim[2] > 0) ceiling(log10(xlim[2]))
+                    else -ceiling(log10(-xlim[2]))) 
                 xtck <- c(1:10 %o% 10^((xpow)[1]:(xpow)[2]))
             } else {  # non-log x-axis
-                stepsize <- abs(diff(axTicks(1)[1:2])) / xntck 
+                ## find stepsize used in default axis
+                stepsize <- abs(diff(axTicks(1)[1:2])) / xntck
+                ## add xntck ticks between
                 xtck <- seq(from = min(axTicks(1)) - stepsize * xntck,
                             to = max(axTicks(1)) + stepsize * xntck,
                             by = stepsize)
@@ -205,10 +219,13 @@ stratPlot.numeric <- function(var,           # numeric vector
         ##  default y-axis minor tick marks
         if (is.null(ytck)) {
             if (grepl("y", log)) {
-                ypow <- c(if (ylim[1] > 0) floor(log10(ylim[1]))
-                          else - floor(log10(-ylim[1])),
-                          if (ylim[2] > 0) ceiling(log10(ylim[2]))
-                          else -ceiling(log10(-ylim[2]))) 
+                ypow <- c(
+                    if (ylim[1] == 0) -100
+                    else if (ylim[1] > 0) floor(log10(ylim[1]))
+                    else - floor(log10(-ylim[1])),
+                    if (ylim[2] == 0) -100
+                    else if (ylim[2] > 0) ceiling(log10(ylim[2]))
+                    else -ceiling(log10(-ylim[2]))) 
                 ytck <- c(1:10 %o% 10^((ypow[1]-1):(ypow[2]-1)))
             } else {
                 stepsize <- abs(diff(axTicks(2)[1:2])) / yntck
