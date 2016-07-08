@@ -348,6 +348,7 @@ stratPlot.data.frame <- function(var, # dataframe
         if (length(depthcol) > 1) warning("multiple depth columns found, using first")
         agecol <- grep("age", names(var), ignore.case = TRUE)
         if (length(agecol) > 1) warning("multiple age columns found, using first")
+        ## depthcol found but agecol isn't
         if (length(depthcol) >= 1 && length(agecol) == 0) {
             ##  check gapsize
             if (!is.null(gapsize)) {
@@ -362,6 +363,7 @@ stratPlot.data.frame <- function(var, # dataframe
             } else if (agedir == "v") {
                 if (is.null(ylab)) ylab <- "Depth (mbsf)"
             }
+        ## agecol found but depthcol isn't
         } else if (length(depthcol) == 0 && length(agecol) >= 1) {
             ##  check gapsize
             if (!is.null(gapsize)) {
@@ -369,6 +371,7 @@ stratPlot.data.frame <- function(var, # dataframe
             }
             age <- var[, agecol[1]]
             var <- var[, -agecol[1]]
+        ## both agecol and depthcol found, using agecol
         } else if (length(depthcol) > 0 && length(agecol) > 0) {
             ##  TODO: interactive selection of desired age
             ##  check gapsize
@@ -483,13 +486,19 @@ stratPlot.data.frame <- function(var, # dataframe
     }
     
     ##  call stratPlot.numeric, multiple times if necessary
-    for (i in seq_along(var)) {
-        stratPlot(if (stacked) rowSums(var[, 1:i]) else var[, i], age, agedir, pb,
+    for (i in nvar) {
+        stratPlot(if (nvar == 1) var
+                  else if (stacked) rowSums(var[, 1:i])
+                  else var[, i],
+                  age, agedir, pb,
                   add = if (oneplot && i != 1) TRUE else FALSE, error = error,
                   xax = xax, yax = yax, mar = mar,
+                  ## TODO: change exists check for something else b/c it currently
+                  ## uses the global space
                   ylab = if (exists("ylabs")) ylab[i] else ylab,
                   xlab = if (exists("xlabs")) xlabs[i] else xlab,
-                  xlim = if (oneplot && age == "v") range(var, na.rm = TRUE) else xlim,
+                  xlim = if (oneplot && age == "v") range(var, na.rm = TRUE)
+                         else xlim,
                   ylim = if (oneplot && age == "h") range(var, na.rm = TRUE)
                          else if (exists("ylims")) ylims[[i]] else ylim,
                   bty = bty, lty = if (exists("ltys")) ltys[i] else lty,
