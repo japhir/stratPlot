@@ -102,7 +102,7 @@ stratPlot.numeric <- function(var,           # numeric vector
     if (!add) {
         ##  set up blank plotting area
         plot(c(1,1), c(1,1), type = "n", xlim = xlim, ylim = ylim, log = log,
-             xlab = "", ylab = "", axes = FALSE)
+             xlab = "", ylab = "", axes = FALSE, ...)
 
         ##  default axis with values
         lapply(xax, axis)
@@ -448,7 +448,7 @@ stratPlot.data.frame <- function(var, # dataframe
         if (length(col) == nvar) {
             cols <- col
         } else stop("Incorrect length of col")
-    }
+    } else cols <- NULL
     
     if (length(lty) > 1) {
         if (length(lty) == nvar) {
@@ -502,7 +502,7 @@ stratPlot.data.frame <- function(var, # dataframe
                   ylim = if (oneplot && age == "h") range(var, na.rm = TRUE)
                          else if (exists("ylims")) ylims[[i]] else ylim,
                   bty = bty, lty = if (exists("ltys")) ltys[i] else lty,
-                  col = if (exists("cols")) cols[i] else col,
+                  col = if (!is.null(cols)) cols[i] else col,
                   lwd = if (exists("lwds")) lwds[i] else lwd,
                   type = if (exists("types")) types[i] else type,
                   pch = if (exists("pchs")) pchs[i] else pch,
