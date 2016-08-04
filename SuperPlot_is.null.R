@@ -21,6 +21,7 @@ stratPlot.numeric <- function(var,           # numeric vector
                               xax = if (agedir == "h") 1 else 3, # default position of x-axis
                               yax = 2,         # default position of yaxis
                               mar = "auto",    # generated based on xax and yax or inherited
+                              abc = NULL,
                               ##  TODO: add standard Geologic Time Scale to region near x or y axis
                               ..., ylab = NULL, xlab = NULL, xlim = NULL,
                               log = "", xntck = 10, yntck = 10, xtck = NULL,
@@ -235,14 +236,18 @@ stratPlot.numeric <- function(var,           # numeric vector
             }
         }
         ##  minor tick axis
-        lapply(xax, axis, at = xtck, labels = FALSE, tcl = .3)
-        lapply(yax, axis, at = ytck, labels = FALSE, tcl = .3)
+        lapply(xax, axis, at = xtck, labels = FALSE, tcl = -.2)
+        lapply(yax, axis, at = ytck, labels = FALSE, tcl = -.2)
     }
     
     ##  plot a legend of one variable... is this necessary?
     if(!is.null(legend))
         legend("topright", legend = legend, bty = bty, lty = lty, 
                pch = pch, ...)
+
+    ## add corner ABC
+    if(!is.null(abc))
+        addABC(abc)
 }
 
 
@@ -346,7 +351,7 @@ stratPlot.data.frame <- function(var, # dataframe
         ##  find column that has age
         depthcol <- grep("depth", names(var), ignore.case = TRUE)
         if (length(depthcol) > 1) warning("multiple depth columns found, using first")
-        agecol <- grep("age", names(var), ignore.case = TRUE)
+        agecol <- grep("age|time", names(var), ignore.case = TRUE)
         if (length(agecol) > 1) warning("multiple age columns found, using first")
         ## depthcol found but agecol isn't
         if (length(depthcol) >= 1 && length(agecol) == 0) {
@@ -399,7 +404,8 @@ stratPlot.data.frame <- function(var, # dataframe
     ##  parsing of x- and ylab 
     if (agedir == "h") {
         if (!is.null(ylab)) {
-            if (length(ylab) > 1 && length(ylab) != nvar){ 
+            ## TODO: parse ylab in similar manner as xlab, with proper expression check
+            if (is.character(ylab) && length(ylab) > 1 && length(ylab) != nvar){ 
                 stop("Incorrect length of ylab")
             }
             if (class(ylab) == "formula"){
@@ -486,21 +492,16 @@ stratPlot.data.frame <- function(var, # dataframe
     }
     
     ##  call stratPlot.numeric, multiple times if necessary
-    for (i in nvar) {
-        stratPlot(if (nvar == 1) var
-                  else if (stacked) rowSums(var[, 1:i])
-                  else var[, i],
-                  age, agedir, pb,
-                  add = if (oneplot && i != 1) TRUE else FALSE, error = error,
-                  xax = xax, yax = yax, mar = mar,
-                  ## TODO: change exists check for something else b/c it currently
+    for (i in seq_len(nvar)) {
+        stratPlot(if (nvar == 1) { var } else if (stacked) { rowSums(var[, 1:i]) } else { var[, i] },
+                  age = age, agedir = agedir, pb = pb,
+                  add = if (is.null(add)) { if (oneplot && i != 1) TRUE else FALSE } else { add },
+                  error = error, xax = xax, yax = yax, mar = mar, ## TODO: change exists check for something else b/c it currently
                   ## uses the global space
-                  ylab = if (exists("ylabs")) ylab[i] else ylab,
+                  ylab = if (exists("ylabs")) ylabs[i] else ylab,
                   xlab = if (exists("xlabs")) xlabs[i] else xlab,
-                  xlim = if (oneplot && age == "v") range(var, na.rm = TRUE)
-                         else xlim,
-                  ylim = if (oneplot && age == "h") range(var, na.rm = TRUE)
-                         else if (exists("ylims")) ylims[[i]] else ylim,
+                  xlim = if (oneplot && age == "v") range(var, na.rm = TRUE) else xlim,
+                  ylim = if (oneplot && age == "h") range(var, na.rm = TRUE) else if (exists("ylims")) ylims[[i]] else ylim,
                   bty = bty, lty = if (exists("ltys")) ltys[i] else lty,
                   col = if (!is.null(cols)) cols[i] else col,
                   lwd = if (exists("lwds")) lwds[i] else lwd,
@@ -542,6 +543,15 @@ insertEmpty <- function(df, afterrow) {
     df <- df[order(df$id), ]
     df <- df[ , !names(df) %in% "id"]
     return(df)
+}
+
+## add large a/b/c in top left corner of current plot
+addABC <- function(char = "A", xadj = 0.04 * abs(diff(par("usr")[1:2])),
+                    yadj = 0.04 * abs(diff(par("usr")[3:4])), cex = 2) {
+    xpos <- par("usr")[1] + xadj
+    ypos <- par("usr")[4] + yadj
+    mtext(char, 3, at = xpos, cex = cex)
+    ## text(xpos, ypos, char, cex = cex, xpd = NA)
 }
 
 
