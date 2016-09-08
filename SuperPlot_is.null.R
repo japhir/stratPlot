@@ -21,7 +21,7 @@ stratPlot.numeric <- function(age,    # numeric vector
                               xax = if (agedir == "h") 1 else 3, # default position of x-axis
                               yax = 2,         # default position of yaxis
                               mar = "auto",    # generated based on xax and yax or inherited
-                              abc = NULL, ##  TODO: add standard Geologic Time Scale to region near x or y axis
+                              abc = NULL, ##  TODO: add standard Geologic Time Scale to region near age axis
                               ..., ylab = NULL, xlab = NULL, xlim = NULL,
                               las = 1, log = "", xntck = 2, yntck = 2,
                               xtck = NULL, ytck = NULL, ylim = NULL, bty = "n",
@@ -89,9 +89,15 @@ stratPlot.numeric <- function(age,    # numeric vector
     ##  default xlab, ylab
     if (agedir == "h") {
         if (is.null(xlab)) xlab <- "Age (Ma)"
-        if (is.null(ylab)) ylab <- ""
+        if (is.null(ylab)) {
+            message("No ylab specified")
+            ylab <- ""
+        }
     } else {
-        if (is.null(xlab)) xlab <- ""
+        if (is.null(xlab)) {
+            message("No xlab specified")
+            xlab <- ""
+        }
         if (is.null(ylab)) ylab <- "Age (Ma)"
     }
 
