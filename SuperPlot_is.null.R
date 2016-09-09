@@ -9,25 +9,33 @@ stratPlot <- function(var, ...){
 }
 
 ## Creates a plot based on a depth/age vector and a variable vector
-stratPlot.numeric <- function(age,    # numeric vector 
-                              var,    # numeric vector
-                              agedir = "h",  # "v", "ver", "vertical" or "h" "hor" "horizontal" 
-                              pb = "n",      # polygon/bar
-                              ##  gapmaker = NULL, # TODO
-                              oneplot = FALSE, # logical, if TRUE plot all variables in the same plot
-                              add = FALSE,     # logical, add to plot or start new one
+stratPlot.numeric <- function(age,      # numeric vector 
+                              var,      # numeric vector
+                              agedir = "h",
+                                        # "v", "ver", "vertical" or "h" "hor"
+                                        # "horizontal"
+                              pol = FALSE,
+                              bar = FALSE,
+                              ##  gapsize = NULL, # TODO: add support
+                              add = FALSE,     # logical, add to plot
                               error = NULL,    # vector of errors to plot (note: relative values!)
-                              stacked = FALSE, # logical, calculate cumulative sum for vars
                               xax = if (agedir == "h") 1 else 3, # default position of x-axis
                               yax = 2,         # default position of yaxis
                               mar = "auto",    # generated based on xax and yax or inherited
-                              abc = NULL, ##  TODO: add standard Geologic Time Scale to region near age axis
-                              ..., ylab = NULL, xlab = NULL, xlim = NULL,
-                              las = 1, log = "", xntck = 2, yntck = 2,
-                              xtck = NULL, ytck = NULL, ylim = NULL, bty = "n",
-                              type = "o", pch = 16, errortype = NULL,
-                              errorcol = NULL, pol0 = NULL, barscol = NULL,
-                              fillcol = NULL, border = NULL, legend = NULL) {
+                              abc = NULL,      # TODO: add standard Geologic Time Scale to region near age axis
+                              ...,
+                              xlab = NULL, ylab = NULL,
+                              xlim = NULL, ylim = NULL, 
+                              las = 1,  # axis labels write direction
+                              log = "",
+                              xntck = 2, yntck = 2,  # number of minor tickmarks
+                              xtck = NULL, ytck = NULL, # position of tickmarks
+                              bty = "n",
+                              type = "o", pch = 16,
+                              errortype = NULL, errorcol = NULL,
+                              pol0 = NULL,  # polygon 0-position
+                              barscol = NULL, fillcol = NULL,
+                              border = NULL, legend = NULL) {
     ##  check var and age
     if (length(var) != length(age)) {
         stop("Unequal length of var and age")
@@ -46,11 +54,6 @@ stratPlot.numeric <- function(age,    # numeric vector
         agedir <- substr(agedir, 1, 1) # agedir is now either 'v' or 'h'
     }
     
-    ##  check pb
-    if (!pb %in% c("n", "PB", "BP", "P", "B")) {
-        stop("Invalid pb, choose 'n' none, 'PB' polygon bar, 'P' polygon or 'B' bar")
-    }
-
     ## check error
     if (!is.null(error)) {
         ##  check errortype
@@ -118,23 +121,8 @@ stratPlot.numeric <- function(age,    # numeric vector
         lapply(yax, function(i) { mtext(ylab, side = i, line = 2) })
     }
     
-    ##  set plotting variables for PB
-    if (pb == "PB" || pb == "BP") { # for polygon and bars
-        area <- TRUE
-        bars <- TRUE
-    } else if (pb == "P") { # polygon
-        area <- TRUE
-        bars <- FALSE
-    } else if (pb == "B") { # bars
-        area <- FALSE
-        bars <- TRUE
-    } else if (pb == "n") {
-        area <- FALSE
-        bars <- FALSE
-    } 
-    
-    ##  plot PB polygon
-    if (area) {
+    ##  plot polygon
+    if (pol) {
         ## baseline to draw polygon to
         if (is.null(pol0)) {
             ## logarithmic var axis -> draw polygon to minimum value
@@ -183,8 +171,8 @@ stratPlot.numeric <- function(age,    # numeric vector
             errorAreaPlot(var, age, error, col = errorcol, agedir = agedir)
     }
 
-    ##  plot PB bars (added after errors to overlap the possible areas)
-    if (bars) {
+    ##  plot bar (added after errors to overlap the possible areas)
+    if (bar) {
         if (is.null(pol0)) pol0 <- 0
         if (is.null(barscol)) barscol <- "steelblue"
         segments(x0 = if (agedir == "h") age else rep(pol0, length(var)),
@@ -204,13 +192,12 @@ stratPlot.numeric <- function(age,    # numeric vector
         ## default x-axis minor tick marks
         if (is.null(xtck)) {
             if (grepl("x", log)) {
-                xpow <- c(
-                    if (xlim[1] == 0) -100
-                    else if (xlim[1] > 0) floor(log10(xlim[1]))
-                    else - floor(log10(-xlim[1])),
-                    if (xlim[2] == 0) -100
-                    else if (xlim[2] > 0) ceiling(log10(xlim[2]))
-                    else -ceiling(log10(-xlim[2]))) 
+                xpow <- c(if (xlim[1] == 0) -100
+                          else if (xlim[1] > 0) floor(log10(xlim[1]))
+                          else - floor(log10(-xlim[1])),
+                          if (xlim[2] == 0) -100
+                          else if (xlim[2] > 0) ceiling(log10(xlim[2]))
+                          else -ceiling(log10(-xlim[2]))) 
                 xtck <- c(1:10 %o% 10^((xpow)[1]:(xpow)[2]))
             } else {  # non-log x-axis
                 ## find stepsize used in default axis
@@ -325,8 +312,9 @@ errorAreaPlot <- function(var = NULL, age, error,
 ##  Takes a dataframe of one or multiple variable(s) to  create a (set of) plot(s)
 stratPlot.data.frame <- function(var, # dataframe
                                  age = NULL, # optional vector 
-                                 agedir = "h",  # "v", "ver", "vertical" or "h" "hor" "horizontal" 
-                                 pb = "n",        # polygon/bar
+                                 agedir = "h",  # "v", "ver", "vertical" or "h" "hor" "horizontal"
+                                 pol = FALSE,     # polygon
+                                 bar = FALSE,     # bar
                                  gapsize = NULL,  # lines not drawn for timesteps > gapsize
                                  oneplot = FALSE, # logical, if TRUE plot all variables in the same plot
                                  genframe = TRUE, # show plots in same window
