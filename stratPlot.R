@@ -65,54 +65,48 @@ stratPlot.numeric <- function(age, var,
         agedir <- substr(agedir, 1, 1) # agedir is converted to either 'v' or 'h'
     }
     
-    ##  mar (depends on xax and yax, which are not checked)
-    if (identical(mar, "auto")) {
-        mar <- c(if (1 %in% xax || 1 %in% yax) 5 else 2,
-                 if (2 %in% xax || 2 %in% yax) 5 else 2,
-                 if (3 %in% xax || 3 %in% yax) 5 else 2,
-                 if (4 %in% xax || 4 %in% yax) 5 else 2) + .1
-    } else if (identical(mar, "inherit")) {
-        mar <- par(no.readonly = TRUE)$mar
-    }
-    
-    ##  xlim, ylim
-    if (agedir == "h") {
-        if (is.null(xlim)) xlim <- rev(range(age, na.rm = TRUE))
-        if (is.null(ylim)) ylim <- range(var, na.rm = TRUE)
-    } else {
-        if (is.null(xlim)) xlim <- range(var, na.rm = TRUE)
-        if (is.null(ylim)) ylim <- rev(range(age, na.rm = TRUE))
-    }
-    
-    ##  default xlab, ylab
-    if (agedir == "h") {
-        if (is.null(xlab)) xlab <- "Age (Ma)"
-        if (is.null(ylab)) {
-            message("No ylab provided")
-            ylab <- ""
-        }
-    } else {
-        if (is.null(xlab)) {
-            message("No xlab provided")
-            xlab <- ""
-        }
-        if (is.null(ylab)) ylab <- "Age (Ma)"
-    }
-
-    ##  set up plotting margins
-    par(mar = mar, bty = bty)
-    
-    ##  set up empty plot
     if (!add) {
-        ## set up blank plotting area
+        ##  mar (depends on xax and yax, which are not checked)
+        if (identical(mar, "auto")) {
+            mar <- c(if (1 %in% xax || 1 %in% yax) 5 else 2,
+                     if (2 %in% xax || 2 %in% yax) 5 else 2,
+                     if (3 %in% xax || 3 %in% yax) 5 else 2,
+                     if (4 %in% xax || 4 %in% yax) 5 else 2) + .1
+        } else if (identical(mar, "inherit")) {
+            mar <- par(no.readonly = TRUE)$mar
+        }
+        
+        ##  xlim, ylim
+        if (agedir == "h") {
+            if (is.null(xlim)) xlim <- rev(range(age, na.rm = TRUE))
+            if (is.null(ylim)) ylim <- range(var, na.rm = TRUE)
+        } else {
+            if (is.null(xlim)) xlim <- range(var, na.rm = TRUE)
+            if (is.null(ylim)) ylim <- rev(range(age, na.rm = TRUE))
+        }
+    
+        ##  default xlab, ylab
+        if (agedir == "h") {
+            if (is.null(xlab)) xlab <- "Age (Ma)"
+            if (is.null(ylab)) {
+                message("No ylab provided")
+                ylab <- ""
+            }
+        } else {
+            if (is.null(xlab)) {
+                message("No xlab provided")
+                xlab <- ""
+            }
+            if (is.null(ylab)) ylab <- "Age (Ma)"
+        }
+
+        ##  set up plotting margins
+        par(mar = mar, bty = bty)
+    
+        ##  set up empty plot
         plot(1, type = "n", xlim = xlim, ylim = ylim, log = log,
              xlab = "", ylab = "", axes = FALSE, ...)
         ## axes added later
-        ## add axis labels
-        lapply(xax, function(i) {
-            mtext(xlab, side = i, line = if (grepl("x", log)) 3 else 2)})
-        lapply(yax, function(i) {
-            mtext(ylab, side = i, line = if (grepl("y", log)) 3 else 2)})
     }
     
     if (pol || bar) {
@@ -186,69 +180,80 @@ stratPlot.numeric <- function(age, var,
 
     ## add axes
     if (!add) {
-        ## if the x-axis is on a logarithmic scale
-        if (grepl("x", log)) {
-            ## the log10 range of powers that need something done
-            xpow <- c(
-                if (xlim[1] == 0) -100
-                else if (xlim[1] > 0) floor(log10(xlim[1]))
-                else - floor(log10(-xlim[1])),
-                if (xlim[2] == 0) -100
-                else if (xlim[2] > 0) ceiling(log10(xlim[2]))
-                else -ceiling(log10(-xlim[2]))) 
-            if (is.null(xtck)) 
-                xtck <- c(1:10 %o% 10^((xpow)[1]:(xpow)[2]))
-            ## log x-axis with nicer 10^xpow labels
-            lapply(xax, axis, at = 10^(xpow[1]:xpow[2]),
-                   labels = sapply((xpow)[1]:(xpow)[2], # or -xpow[1]?
-                                   function(i) {
-                                       as.expression(bquote(10^ .(i)))}),
-                   las = las)
-        } else {
-            ## non-log x-axis
-            lapply(xax, axis, las = las)
-            ## find stepsize used in default axis
-            stepsize <- abs(diff(axTicks(1)[1:2])) / xntck
-            if (is.null(xtck)) 
-                ## add xntck ticks between
-                xtck <- seq(from = min(axTicks(xax[1])) - stepsize * xntck,
-                            to = max(axTicks(1)) + stepsize * xntck,
-                            by = stepsize)
+        if (xax %in% c(1, 3)) {
+            ## if the x-axis is on a logarithmic scale
+            if (grepl("x", log)) {
+                ## the log10 range of powers that need something done
+                xpow <- c(
+                    if (xlim[1] == 0) -100
+                    else if (xlim[1] > 0) floor(log10(xlim[1]))
+                    else - floor(log10(-xlim[1])),
+                    if (xlim[2] == 0) -100
+                    else if (xlim[2] > 0) ceiling(log10(xlim[2]))
+                    else -ceiling(log10(-xlim[2]))) 
+                if (is.null(xtck)) 
+                    xtck <- c(1:10 %o% 10^((xpow)[1]:(xpow)[2]))
+                ## log x-axis with nicer 10^xpow labels
+                lapply(xax, axis, at = 10^(xpow[1]:xpow[2]),
+                       labels = sapply((xpow)[1]:(xpow)[2], # or -xpow[1]?
+                                       function(i) {
+                                           as.expression(bquote(10^ .(i)))}),
+                       las = las)
+            } else {
+                ## non-log x-axis
+                lapply(xax, axis, las = las)
+                ## find stepsize used in default axis
+                stepsize <- abs(diff(axTicks(1)[1:2])) / xntck
+                if (is.null(xtck)) 
+                    ## add xntck ticks between
+                    xtck <- seq(from = min(axTicks(xax[1])) - stepsize * xntck,
+                                to = max(axTicks(1)) + stepsize * xntck,
+                                by = stepsize)
+            }
+            ## minor x-axis tick marks
+            lapply(xax, axis, at = xtck, labels = FALSE, tcl = -.2)
         }
-        ## minor x-axis tick marks
-        lapply(xax, axis, at = xtck, labels = FALSE, tcl = -.2)
-        ## same for y-axis
-        if (grepl("y", log)) {
-            ## the log10 range of powers that need something done
-            ypow <- c(
-                if (ylim[1] == 0) -100
-                else if (ylim[1] > 0) floor(log10(ylim[1]))
-                else - floor(log10(-ylim[1])),
-                if (ylim[2] == 0) -100
-                else if (ylim[2] > 0) ceiling(log10(ylim[2]))
-                else -ceiling(log10(-ylim[2]))) 
-            if (is.null(ytck)) 
-                ytck <- c(1:10 %o% 10^((ypow)[1]:(ypow)[2]))
-            ## log x-axis with nicer 10^xpow labels
-            lapply(yax, axis, at = 10^(ypow[1]:ypow[2]),
-                   labels = sapply((ypow)[1]:(ypow)[2], # or -xpow[1]?
-                                   function(i) {
-                                       as.expression(bquote(10^ .(i)))}),
-                   las = las)
-        } else {
-            ## non-log y-axis
-            lapply(yax, axis, las = las)
-            ## find stepsize used in default axis
-            stepsize <- abs(diff(axTicks(yax[1])[1:2])) / yntck
-            if (is.null(ytck)) 
-                ## add xntck ticks between
-                ytck <- seq(from = min(axTicks(yax[1])) - stepsize * yntck,
-                            to = max(axTicks(yax[1])) + stepsize * yntck,
-                            by = stepsize)
+        if (yax %in% c(2, 4)) {
+            ## same for y-axis
+            if (grepl("y", log)) {
+                ## the log10 range of powers that need something done
+                ypow <- c(
+                    if (ylim[1] == 0) -100
+                    else if (ylim[1] > 0) floor(log10(ylim[1]))
+                    else - floor(log10(-ylim[1])),
+                    if (ylim[2] == 0) -100
+                    else if (ylim[2] > 0) ceiling(log10(ylim[2]))
+                    else -ceiling(log10(-ylim[2]))) 
+                if (is.null(ytck)) 
+                    ytck <- c(1:10 %o% 10^((ypow)[1]:(ypow)[2]))
+                ## log x-axis with nicer 10^xpow labels
+                lapply(yax, axis, at = 10^(ypow[1]:ypow[2]),
+                       labels = sapply((ypow)[1]:(ypow)[2], # or -xpow[1]?
+                                       function(i) {
+                                           as.expression(bquote(10^ .(i)))}),
+                       las = las)
+            } else {
+                ## non-log y-axis
+                lapply(yax, axis, las = las)
+                ## find stepsize used in default axis
+                stepsize <- abs(diff(axTicks(yax[1])[1:2])) / yntck
+                if (is.null(ytck)) 
+                    ## add xntck ticks between
+                    ytck <- seq(from = min(axTicks(yax[1])) - stepsize * yntck,
+                                to = max(axTicks(yax[1])) + stepsize * yntck,
+                                by = stepsize)
+            }
+            ## minor y-axis tick marks
+            lapply(yax, axis, at = ytck, labels = FALSE, tcl = -.2)
         }
-        ## minor y-axis tick marks
-        lapply(yax, axis, at = ytck, labels = FALSE, tcl = -.2)
-   }
+        ## add axis labels
+        if (xax %in% c(1, 3))
+            lapply(xax, function(i) {
+                mtext(xlab, side = i, line = if (grepl("x", log) || las == 1) 3 else 2)})
+        if (yax %in% c(2, 4))
+            lapply(yax, function(i) {
+                mtext(ylab, side = i, line = if (grepl("y", log) || las == 1) 3 else 2)})
+    }
     
     ## add corner ABC
     if(!is.null(abc))
