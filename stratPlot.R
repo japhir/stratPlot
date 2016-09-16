@@ -2,7 +2,7 @@
 ## Ilja Kocken
 ## Student of Marine Sciences at Utrecht University
 ## First version: 2014-04-11
-## Latest version: 2016-09-08
+## Latest version: 2016-09-16
 
 ## test code
 ## stratPlot(1:10, c(1, 4, 5, 100, 400, 1000, 50000, 90000, 1000000, 1000000),
@@ -22,7 +22,9 @@ stratPlot <- function(var, ...){
 ## Creates a plot based on a depth/age vector and a variable vector
 stratPlot.numeric <- function(age, var, 
                               ## direction of age "v", "ver", "vertical" or "h" "hor" "horizontal"
-                              agedir = "h",  
+                              agedir = "h",
+                              ## GTS colour scale on age axis
+                              GTS = F, Era = F, Period = T, Epoch = T, Age = F, GTSfrac = .05,
                               ## polygon to plot
                               pol = F, pol0 = NULL, polcol = "#4682B4E6", border = NA, 
                               ## bar to plot
@@ -74,6 +76,10 @@ stratPlot.numeric <- function(age, var,
                      if (4 %in% xax || 4 %in% yax) 5 else 2) + .1
         } else if (identical(mar, "inherit")) {
             mar <- par(no.readonly = TRUE)$mar
+        }
+
+        if (GTS) {
+            addGTS(agedir = agedir, Era = F, Period = T, Epoch = T, Age = F, frac = GTSfrac)
         }
         
         ##  xlim, ylim
@@ -589,6 +595,30 @@ addABC <- function(char = "A", xadj = 0.04 * abs(diff(par("usr")[1:2])),
     ## text(xpos, ypos, char, cex = cex, xpd = NA)
 }
 
+addGTS <- function(age, frac = 0.05, agedir = "h", Era = F, Period = F, Epoch = T, Age = F ) {
+    GTS <- read.csv("~/Dropbox/DepthPlotter/GTS_colours.csv")
+    GTS$hex <- rgb(GTS$R, GTS$G, GTS$B, maxColorValue = 255)
+    GTS$mean <- (GTS$end - GTS$start) / 2 + GTS$start
 
+    if (Era)    Eras <- GTS[GTS$type == "Era", ]
+    if (Period) Periods <- GTS[GTS$type == "Period", ]
+    if (Epoch)  Epochs <- GTS[GTS$type == "Epoch", ]
+    if (Age)    Ages <- GTS[GTS$type == "Age", ]
+    
+    ## new reference frame so that y axis is 0,1
+    mar <- par(no.readonly = TRUE)$mar   
+    par(new = T, mar = mar)
+    plot(if (agedir == "h") range(age) else c(0, 1),
+         if (agedir == "h") c(0, 1) else range(age),
+         xaxs = if (agedir == "h") "r" else "i",
+         yaxs = if (agedir == "h") "i" else "r",
+         xlim = if (agedir == "h") rev(range(age)) else c(0, 1),
+         ylim = if (agedir == "h") c(0, 1) else rev(range(age)),
+         type = "n", axes = F, xlab = "", ylab = "")
+    rect(if (agedir == "h") Epochs$start else 0, if (agedir == "h") 0 else Epochs$start,
+         if (agedir == "h") Epochs$end else frac, if (agedir == "h") frac else Epochs$end, col = Epochs$hex)
+    text(if (agedir == "h") Epochs$mean else mean(c(0, frac)), if (agedir == "h") mean(c(0, frac)) else Epochs$mean,
+         labels = Epochs$name, srt = if (agedir == "h") 0 else 90)
+}
 
 
