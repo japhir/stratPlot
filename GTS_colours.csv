@@ -1,5 +1,8 @@
 name,type,start,end,R,G,B
+Phanerozoic,Eon,0,541,154,217,221
+Mesozoic,Era,66,252,103,197,202
 Cenozoic,Era,0,66,242,249,29
+Cretaceous,Period,66,145,127,198,78
 Paleogene,Period,23.03,66,253,154,82
 Neogene,Period,2.58,23.03,255,230,25
 Quaternary,Period,0,2.58,249,249,127
@@ -10,6 +13,8 @@ Miocene,Epoch,5.333,23.03,255,255,0
 Oligocene,Epoch,23.03,33.9,253,192,122
 Eocene,Epoch,33.9,56,253,180,108
 Paleocene,Epoch,56,66,253,167,95
+Upper,Epoch,66,100,166,216,74
+Lower,Epoch,100,131,140,205,87
 ,Age,0,0.0117,254,242,236
 Upper,Age,0.0117,0.126,255,242,211
 Middle,Age,0.126,0.781,255,242,199
@@ -32,3 +37,15 @@ Ypresian,Age,47.8,56,252,167,115
 Thanetian,Age,56,59.2,253,191,111
 Selandian,Age,59.2,61.6,254,191,101
 Danian,Age,61.6,66,253,180,98
+Maastrictian,Age,66,72.1,242,250,140
+Campanian,Age,72.1,83.6,230,244,127
+Santonian,Age,83.6,86.3,217,239,116
+Coniacian,Age,86.3,89.8,204,233,104
+Turonian,Age,89.8,93.9,191,227,93
+Cenamonian,Age,93.9,100,179,222,83
+Albian,Age,100,113,204,234,151
+Aptian,Age,113,126,191,228,138
+Barremian,Age,126,131,179,223,127
+Hauterivian,Age,131,134,166,217,117
+Valanginian,Age,134,139,153,211,106
+Berriasian,Age,139,145,140,205,96

@@ -35,7 +35,7 @@ stratPlot.numeric <- function(age, var,
                               error = NULL, errortype = "bars", # or "area"
                               errorcol = "#BEBEBEE6",
                               abc = NULL,  # add index letter topleft
-                              mar = "auto",  # or inherit or specified
+                              mar = "inherit",  # or "auto" or specified
                               ##  TODO: add standard Geologic Time Scale to region near x or y axis
                               ...,  # other graphical parameters
                               ## default positions of axes (1:4)
@@ -78,13 +78,9 @@ stratPlot.numeric <- function(age, var,
             mar <- par(no.readonly = TRUE)$mar
         }
 
-        if (GTS) {
-            addGTS(agedir = agedir, Era = F, Period = T, Epoch = T, Age = F, frac = GTSfrac)
-        }
-        
         ##  xlim, ylim
         if (agedir == "h") {
-            if (is.null(xlim)) xlim <- rev(range(age, na.rm = TRUE))
+            if (is.null(xlim)) xlim <- range(age, na.rm = TRUE)
             if (is.null(ylim)) ylim <- range(var, na.rm = TRUE)
         } else {
             if (is.null(xlim)) xlim <- range(var, na.rm = TRUE)
@@ -259,6 +255,9 @@ stratPlot.numeric <- function(age, var,
         if (yax %in% c(2, 4))
             lapply(yax, function(i) {
                 mtext(ylab, side = i, line = if (grepl("y", log) || las == 1) 3 else 2)})
+        if (GTS) {
+            addGTS(agedir = agedir, Era = F, Period = T, Epoch = T, Age = F, frac = GTSfrac)
+        }
     }
     
     ## add corner ABC
@@ -595,7 +594,7 @@ addABC <- function(char = "A", xadj = 0.04 * abs(diff(par("usr")[1:2])),
     ## text(xpos, ypos, char, cex = cex, xpd = NA)
 }
 
-addGTS <- function(age, frac = 0.05, agedir = "h", Era = F, Period = F, Epoch = T, Age = F ) {
+addGTS <- function(age, frac = 0.05, agelim = range(age), agedir = "h", Era = F, Period = F, Epoch = T, Age = F ) {
     GTS <- read.csv("~/Dropbox/DepthPlotter/GTS_colours.csv")
     GTS$hex <- rgb(GTS$R, GTS$G, GTS$B, maxColorValue = 255)
     GTS$mean <- (GTS$end - GTS$start) / 2 + GTS$start
@@ -608,11 +607,11 @@ addGTS <- function(age, frac = 0.05, agedir = "h", Era = F, Period = F, Epoch = 
     ## new reference frame so that y axis is 0,1
     mar <- par(no.readonly = TRUE)$mar   
     par(new = T, mar = mar)
-    plot(if (agedir == "h") range(age) else c(0, 1),
-         if (agedir == "h") c(0, 1) else range(age),
+    plot(if (agedir == "h") agelim else c(0, 1),
+         if (agedir == "h") c(0, 1) else agelim,
          xaxs = if (agedir == "h") "r" else "i",
          yaxs = if (agedir == "h") "i" else "r",
-         xlim = if (agedir == "h") rev(range(age)) else c(0, 1),
+         xlim = if (agedir == "h") range(age) else c(0, 1),
          ylim = if (agedir == "h") c(0, 1) else rev(range(age)),
          type = "n", axes = F, xlab = "", ylab = "")
     rect(if (agedir == "h") Epochs$start else 0, if (agedir == "h") 0 else Epochs$start,
@@ -621,4 +620,17 @@ addGTS <- function(age, frac = 0.05, agedir = "h", Era = F, Period = F, Epoch = 
          labels = Epochs$name, srt = if (agedir == "h") 0 else 90)
 }
 
+darker <- function(color = col, factor=1.4){
+    col <- col2rgb(color)
+    col <- col/factor
+    col <- rgb(t(col), maxColorValue=255)
+    col
+}
+
+lighter <- function(color = col, factor=1.4){
+    col <- col2rgb(color)
+    col <- col*factor
+    col <- rgb(t(as.matrix(apply(col, 1, function(x) if (x > 255) 255 else x))), maxColorValue=255)
+    col
+}
 
