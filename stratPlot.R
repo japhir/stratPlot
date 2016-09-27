@@ -4,16 +4,23 @@
 ## First version: 2014-04-11
 ## Latest version: 2016-09-16
 
-## test code
+## ## test code
+##                                         # a vector
 ## stratPlot(1:10, c(1, 4, 5, 100, 400, 1000, 50000, 90000, 1000000, 1000000),
 ##           ylab = pCO[2]~(ppm),
-## 	  pol = T, pol0 = 3e3, polcol = "purple", bar = T, barcol = "green",
+## 	  pol = T, polcol = "purple", bar = T, barcol = "green",
 ## 	  error = c(1.5, 10, 10, 40, 100, 100, 30000, 90000, 10000, 10000),
 ##           errorcol = "red",
-## 	  abc = "A",
+## 	  abc = "A", abcadj = -0.2,
 ## 	  xax = c(1, 3),
 ## 	  xntck = 5,
-##           log = "y")
+##           log = "y", mar = "auto")
+
+## stratPlot(data.frame(var0 = c(1, 4, 5, 100, 400, 1000, 50000, 90000, 1000000, 1000000),
+##                      age = seq(100, 1000, length.out = 10),  # automatically extracts age column
+##                      var1 = rnorm(10, 40)),
+##           log = c("y", ""),
+##           pol = c(T, F))
 
 stratPlot <- function(var, ...){
     UseMethod("stratPlot", var)
@@ -34,7 +41,7 @@ stratPlot.numeric <- function(age, var,
                               ## vector of relative errors or matrix/df of absolute values to plot
                               error = NULL, errortype = "bars", # or "area"
                               errorcol = "#BEBEBEE6",
-                              abc = NULL,  # add index letter topleft
+                              abc = NULL, abcadj = NULL, # add index letter topleft
                               mar = "inherit",  # or "auto" or specified
                               ##  TODO: add standard Geologic Time Scale to region near x or y axis
                               ...,  # other graphical parameters
@@ -89,7 +96,15 @@ stratPlot.numeric <- function(age, var,
     
         ##  default xlab, ylab
         if (agedir == "h") {
-            if (is.null(xlab)) xlab <- "Age (Ma)"
+            if (is.null(xlab)) {
+                if (max(age, na.omit = T) < 100) {
+                    message("Assuming age is given in Mya")
+                    xlab <- "Age (Mya)"
+                } else {
+                    message("Assuming age is given in kya")
+                    xlab <- "Age (kya)"
+                }
+            }
             if (is.null(ylab)) {
                 message("No ylab provided")
                 ylab <- ""
@@ -99,7 +114,15 @@ stratPlot.numeric <- function(age, var,
                 message("No xlab provided")
                 xlab <- ""
             }
-            if (is.null(ylab)) ylab <- "Age (Ma)"
+            if (is.null(ylab)) {
+                if (max(age, na.omit = T) < 100) {
+                    message("Assuming age is given in Mya")
+                    ylab <- "Age (Mya)"
+                } else {
+                    message("Assuming age is given in kya")
+                    ylab <- "Age (kya)"
+                }
+            }
         }
 
         ##  set up plotting margins
@@ -116,7 +139,7 @@ stratPlot.numeric <- function(age, var,
         if (is.null(pol0)) {
             ## logarithmic var axis -> draw polygon to minimum value
             if ((agedir == "h" && grepl("y", log)) ||
-                (agedir == "v" && grepl("v", log))) {
+                (agedir == "v" && grepl("x", log))) {
                 pol0 <- min(var)
             } else  {
                 pol0 <- 0
@@ -182,7 +205,7 @@ stratPlot.numeric <- function(age, var,
 
     ## add axes
     if (!add) {
-        if (xax %in% c(1, 3)) {
+        if ((length(xax == 1) && xax %in% c(1, 3)) || identical(xax, c(1, 3))) {
             ## if the x-axis is on a logarithmic scale
             if (grepl("x", log)) {
                 ## the log10 range of powers that need something done
@@ -215,7 +238,7 @@ stratPlot.numeric <- function(age, var,
             ## minor x-axis tick marks
             lapply(xax, axis, at = xtck, labels = FALSE, tcl = -.2)
         }
-        if (yax %in% c(2, 4)) {
+        if ((length(yax) == 1 && yax %in% c(2, 4)) || identical(yax, c(2, 4))) {
             ## same for y-axis
             if (grepl("y", log)) {
                 ## the log10 range of powers that need something done
@@ -249,10 +272,10 @@ stratPlot.numeric <- function(age, var,
             lapply(yax, axis, at = ytck, labels = FALSE, tcl = -.2)
         }
         ## add axis labels
-        if (xax %in% c(1, 3))
+        if ((length(xax == 1) && xax %in% c(1, 3)) || identical(xax, c(1, 3)))
             lapply(xax, function(i) {
                 mtext(xlab, side = i, line = if (grepl("x", log) || las == 1) 3 else 2)})
-        if (yax %in% c(2, 4))
+        if ((length(yax == 1) && yax %in% c(2, 4)) || identical(yax, c(2, 4)))
             lapply(yax, function(i) {
                 mtext(ylab, side = i, line = if (grepl("y", log) || las == 1) 3 else 2)})
         if (GTS) {
@@ -261,8 +284,10 @@ stratPlot.numeric <- function(age, var,
     }
     
     ## add corner ABC
-    if(!is.null(abc))
-        addABC(abc)
+    if(!is.null(abc)) {
+        if (is.null(abcadj)) abcadj <- 0.04 * abs(diff(par("usr")[1:2])) 
+        addABC(abc, abcadj)
+    }
 }
 
 
@@ -283,12 +308,12 @@ errorBarsPlot <- function(age, var = NULL, error,
         if (!(length(error) == length(var) || length(error) == 1))
             warning("Length of error not equal to var length, recycling")
         if (agedir == "h") {
-            arrows(x0 = age, y0 = var - 0.5 * error, x1 = age,
-                   y1 = var + 0.5 * error, col = col, length = 0.05,
+            arrows(x0 = age, y0 = var - error, x1 = age,
+                   y1 = var + error, col = col, length = 0.05,
                    angle = 90, code = 3)
         }
         else if (agedir == "v") {
-            arrows(x0 = var - 0.5 * error, y0 = age, x1 = var + 0.5 * error,
+            arrows(x0 = var - error, y0 = age, x1 = var + error,
                    y1 = age, col = col, length = 0.05, angle = 90, code = 3)
         }
     }
@@ -325,7 +350,7 @@ errorAreaPlot <- function(age, var = NULL, error,
             }
         } else {
             x <- c(age, rev(age))
-            y <- c(var - .5 * error, rev(var + .5 * error))
+            y <- c(var - error, rev(var + error))
         }
     }
     polygon(x = if (agedir == "h") x else y, y = if (agedir == "h") y else x,
@@ -343,6 +368,7 @@ stratPlot.data.frame <- function(var, # dataframe
                                  add = F, error = NULL,    # vector of errors to plot (note: relative values!)
                                  stacked = F, # logical, calculate cumulative sum for vars
                                  ..., xax = if (agedir == "h") 1 else 3, # default position of x-axis
+                                 log = "",
                                  yax = 2,         # default position of yaxis
                                  las = 1,         # default direction of axis labels
                                  mar = "auto",    # generated based on xax and yax
@@ -518,7 +544,13 @@ stratPlot.data.frame <- function(var, # dataframe
         } else stop("Incorrect length of ylim")
     }
     ##  TODO: also do this for bty?, errortype, errorcol, pol0 and border?
-    
+    if (length(log) > 1) {
+        if (length(log) == nvar) {
+            logs <- log
+        } else stop("Incorrect length of log")
+    }
+
+   
     ##  set up the plotting region
     ##  last is to check if it wasn't a df with only 2 columns
     if (!oneplot && genframe && is.data.frame(var)) {  
@@ -534,6 +566,7 @@ stratPlot.data.frame <- function(var, # dataframe
         stratPlot(if (nvar == 1) { var } else if (stacked) { rowSums(var[, 1:i]) } else { var[, i] },
                   age = age, agedir = agedir,
                   pol = if (exists("pols")) pols[i] else pol,
+                  ## pol = pol[i],
                   bar = if (exists("bars")) bars[i] else bar,
                   add = if (is.null(add)) { if (oneplot && i != 1) TRUE else FALSE } else { add },
                   error = error, xax = xax, yax = yax, mar = mar, ## TODO: change exists check for something else b/c it currently uses the global space
@@ -546,6 +579,7 @@ stratPlot.data.frame <- function(var, # dataframe
                   lwd = if (exists("lwds")) lwds[i] else lwd,
                   type = if (exists("types")) types[i] else type,
                   pch = if (exists("pchs")) pchs[i] else pch,
+                  log = if (exists("logs")) logs[i] else log,
                   errortype = errortype, errorcol = errorcol, pol0 = pol0,
                   polcol = polcol, border = border, ...)
     }
