@@ -2,19 +2,23 @@
 ## Ilja Kocken
 ## Student of Marine Sciences at Utrecht University
 ## First version: 2014-04-11
-## Latest version: 2016-09-16
+## Latest version: 2016-10-26
 
 ## ## test code
 ##                                         # a vector
-## stratPlot(1:10, c(1, 4, 5, 100, 400, 1000, 50000, 90000, 1000000, 1000000),
-##           ylab = pCO[2]~(ppm),
-## 	  pol = T, polcol = "purple", bar = T, barcol = "green",
-## 	  error = c(1.5, 10, 10, 40, 100, 100, 30000, 90000, 10000, 10000),
-##           errorcol = "red",
-## 	  abc = "A", abcadj = -0.2,
+## age <- c(0, 0.2, 0.3, 0.5, 0.8, 4, 13, 20, 40, 50, 90)
+## var <- c(1, 4, 5, 100, 400, 1000, 50000, 90000, 1000000, 1000000, 5000000)
+## err <- c(1.5, 10, 10, 40, 100, 100, 30000, 90000, 100000, 100000, 0)
+## stratPlot(age, var, ylab = pCO[2]~(ppm), ylim = c(1e-1, 1e6),
+## 	  pol = T, polcol = "#EEEEEE66", bar = T, barcol = "green",
+## 	  error = err,
+##           errorcol = "red",          
+## 	  abc = "A", abcadj = -0.5,
 ## 	  xax = c(1, 3),
-## 	  xntck = 5,
+## 	  xntck = 3,
+##           gapsize = 1,
 ##           log = "y", mar = "auto")
+## addGTS(age, 5e-2, 1e0)
 
 ## stratPlot(data.frame(var0 = c(1, 4, 5, 100, 400, 1000, 50000, 90000, 1000000, 1000000),
 ##                      age = seq(100, 1000, length.out = 10),  # automatically extracts age column
@@ -41,6 +45,7 @@ stratPlot.numeric <- function(age, var,
                               ## vector of relative errors or matrix/df of absolute values to plot
                               error = NULL, errortype = "bars", # or "area"
                               errorcol = "#BEBEBEE6",
+                              gapsize = NULL,  # don't draw lines when agediff is larger
                               abc = NULL, abcadj = NULL, # add index letter topleft
                               mar = "inherit",  # or "auto" or specified
                               ##  TODO: add standard Geologic Time Scale to region near x or y axis
@@ -62,10 +67,13 @@ stratPlot.numeric <- function(age, var,
     }
 
     ## TODO
-    ## check gapmaker with vectors?
-    ## if (!is.null(gapmaker)) {
-    ##  gapMaker()
-    ## }
+    ## insert gaps where needed
+    if (!is.null(gapsize)) {
+        toolarge <- which(diff(age) > gapsize)
+        df <- insertEmpty(data.frame(age, var), toolarge)
+        age <- df$age
+        var <- df$var
+    }
     
     ## check agedir
     if (!agedir %in% c("v", "ver", "vertical", "h", "hor", "horizontal")) {
@@ -97,12 +105,12 @@ stratPlot.numeric <- function(age, var,
         ##  default xlab, ylab
         if (agedir == "h") {
             if (is.null(xlab)) {
-                if (max(age, na.omit = T) < 100) {
-                    message("Assuming age is given in Mya")
-                    xlab <- "Age (Mya)"
+                if (max(age, na.rm = T) < 100) {
+                    message("Assuming age is given in Ma")
+                    xlab <- "Age (Ma)"
                 } else {
-                    message("Assuming age is given in kya")
-                    xlab <- "Age (kya)"
+                    message("Assuming age is given in ka")
+                    xlab <- "Age (ka)"
                 }
             }
             if (is.null(ylab)) {
@@ -115,12 +123,12 @@ stratPlot.numeric <- function(age, var,
                 xlab <- ""
             }
             if (is.null(ylab)) {
-                if (max(age, na.omit = T) < 100) {
-                    message("Assuming age is given in Mya")
-                    ylab <- "Age (Mya)"
+                if (max(age, na.rm = T) < 100) {
+                    message("Assuming age is given in Ma")
+                    ylab <- "Age (Ma)"
                 } else {
-                    message("Assuming age is given in kya")
-                    ylab <- "Age (kya)"
+                    message("Assuming age is given in ka")
+                    ylab <- "Age (ka)"
                 }
             }
         }
@@ -291,7 +299,7 @@ stratPlot.numeric <- function(age, var,
 }
 
 
-errorBarsPlot <- function(age, var = NULL, error, 
+errorBarsPlot <- function(age, var = NULL, error,  # onesided if single vector!
                           width = diff(range(age)) / 100,
                           col = "#BEBEBEE6",
                           agedir = "h") {
@@ -397,10 +405,6 @@ stratPlot.data.frame <- function(var, # dataframe
         if (length(agecol) > 1) warning("multiple age columns found, using first")
         ## depthcol found but agecol isn't
         if (length(depthcol) >= 1 && length(agecol) == 0) {
-            ##  check gapsize
-            if (!is.null(gapsize)) {
-                var <- gapMaker(var, gapsize = gapsize, varname = depthcol[1])
-            }
             ## extract age/depth from var
             age <- var[, depthcol[1]]
             var <- var[, -depthcol[1]]
@@ -413,29 +417,17 @@ stratPlot.data.frame <- function(var, # dataframe
             }
         ## agecol found but depthcol isn't
         } else if (length(depthcol) == 0 && length(agecol) >= 1) {
-            ##  check gapsize
-            if (!is.null(gapsize)) {
-                var <- gapMaker(var, gapsize = gapsize, varname = agecol[1])
-            }
             ## extract age/depth from var
             age <- var[, agecol[1]]
             var <- var[, -agecol[1]]
         ## both agecol and depthcol found, using agecol
         } else if (length(depthcol) > 0 && length(agecol) > 0) {
             ##  TODO: interactive selection of desired age
-            ##  check gapsize
-            if (!is.null(gapsize)) {
-                var <- gapMaker(var, gapsize = gapsize, varname = agecol[1])
-            }
             ## extract age/depth from var
             age <- var[, agecol[1]]  # for now we just use age if both are available
             ##  omit depth and age
             var <- var[, - c(depthcol[1], agecol[1])] 
         } else { # no depthcol, no agecol found: use first column
-            ##  check gapsize
-            if (!is.null(gapsize)) {
-                var <- gapMaker(var, gapsize = gapsize, varname = agecol[1])
-            }
             ## extract age/depth from var
             age  <- var[,  1]
             var  <- var[, -1]
@@ -529,7 +521,7 @@ stratPlot.data.frame <- function(var, # dataframe
     if (length(polcol) > 1) {
         if (length(polcol) == nvar) {
             polcols <- polcol
-        } else stop("Incorrect length of fillcol")
+        } else stop("Incorrect length of polcol")
     }
 
     if (length(bar) > 1) {
@@ -549,7 +541,6 @@ stratPlot.data.frame <- function(var, # dataframe
             logs <- log
         } else stop("Incorrect length of log")
     }
-
    
     ##  set up the plotting region
     ##  last is to check if it wasn't a df with only 2 columns
@@ -564,7 +555,7 @@ stratPlot.data.frame <- function(var, # dataframe
     ##  call stratPlot.numeric, multiple times if necessary
     for (i in seq_len(nvar)) {
         stratPlot(if (nvar == 1) { var } else if (stacked) { rowSums(var[, 1:i]) } else { var[, i] },
-                  age = age, agedir = agedir,
+                  age = age, agedir = agedir, gapsize = gapsize,
                   pol = if (exists("pols")) pols[i] else pol,
                   ## pol = pol[i],
                   bar = if (exists("bars")) bars[i] else bar,
@@ -628,31 +619,112 @@ addABC <- function(char = "A", xadj = 0.04 * abs(diff(par("usr")[1:2])),
     ## text(xpos, ypos, char, cex = cex, xpd = NA)
 }
 
-addGTS <- function(age, frac = 0.05, agelim = range(age), agedir = "h", Era = F, Period = F, Epoch = T, Age = F ) {
-    GTS <- read.csv("~/Dropbox/DepthPlotter/GTS_colours.csv")
-    GTS$hex <- rgb(GTS$R, GTS$G, GTS$B, maxColorValue = 255)
-    GTS$mean <- (GTS$end - GTS$start) / 2 + GTS$start
+addGTS <- function(age, xleft = NULL, xright = NULL, frac = 0.05,
+                   agelim = range(age), agedir = "h",
+                   type = NULL,
+                   Eon = T, Era = T, Period = T, Epoch = T, Age = T,
+                   Chron = T,
+                   hort = NULL, relwidth = NULL, cex.text = NULL,
+                   verbose = T) {
+    ## check types
+    if (is.null(type)) type <- c(Eon, Era, Period, Epoch, Age, Chron)
+    ## subset types to plot
+    alltypes = c("Eon", "Era", "Period", "Epoch", "Age", "Chron")
+    types <- alltypes[type]
+    if (verbose) cat("\nplotting types:", types)
 
-    if (Era)    Eras <- GTS[GTS$type == "Era", ]
-    if (Period) Periods <- GTS[GTS$type == "Period", ]
-    if (Epoch)  Epochs <- GTS[GTS$type == "Epoch", ]
-    if (Age)    Ages <- GTS[GTS$type == "Age", ]
-    
-    ## new reference frame so that y axis is 0,1
-    mar <- par(no.readonly = TRUE)$mar   
-    par(new = T, mar = mar)
-    plot(if (agedir == "h") agelim else c(0, 1),
-         if (agedir == "h") c(0, 1) else agelim,
-         xaxs = if (agedir == "h") "r" else "i",
-         yaxs = if (agedir == "h") "i" else "r",
-         xlim = if (agedir == "h") range(age) else c(0, 1),
-         ylim = if (agedir == "h") c(0, 1) else rev(range(age)),
-         type = "n", axes = F, xlab = "", ylab = "")
-    rect(if (agedir == "h") Epochs$start else 0, if (agedir == "h") 0 else Epochs$start,
-         if (agedir == "h") Epochs$end else frac, if (agedir == "h") frac else Epochs$end, col = Epochs$hex)
-    text(if (agedir == "h") Epochs$mean else mean(c(0, frac)), if (agedir == "h") mean(c(0, frac)) else Epochs$mean,
-         labels = Epochs$name, srt = if (agedir == "h") 0 else 90)
+    ## read GTS table with color and age info
+    ## todo: make this sharable
+    if (sum(types %in% alltypes[1:5]) > 0) {
+        GTS <- read.csv("~/Dropbox/DepthPlotter/GTS_colours.csv", stringsAsFactors = F)
+        GTS$hex <- rgb(GTS$R, GTS$G, GTS$B, maxColorValue = 255)
+        GTS$mean <- (GTS$end - GTS$start) / 2 + GTS$start
+        ## order the type factor
+        GTS$type <- factor(GTS$type, alltypes[1:5], ordered = T)
+    }
+
+    ## read chron table
+    if (sum(types %in% alltypes[6]) > 0) {
+        Chron <- read.csv("~/Dropbox/DepthPlotter/Chronages.csv", stringsAsFactors = F)
+        Chron$name <- Chron$Pol
+        Chron$hex <- "#000000"
+        Chron$hex[grepl("r", Chron$Pol)] <- "#FFFFFF"
+        Chron$start <- c(22, Chron$GTS2012[-nrow(Chron)])
+        Chron$end <- Chron$GTS2012
+        Chron$mean <- (Chron$end - Chron$start) / 2 + Chron$start
+    }
+
+    ## default xleft/xright
+    if (is.null(xleft)) {
+        if (agedir == "h") {
+            xleft  <- par("usr")[3]
+        } else {
+            xleft <- par("usr")[1]
+        }
+    }
+    if (verbose) cat(" from ", xleft)
+    if (is.null(xright)) {
+        if (agedir == "h") {
+            fullright <- par("usr")[4]
+        } else {
+            fullright <- par("usr")[2]
+        }
+        xright <- xleft + frac * (diff(c(xleft, fullright)))
+    }
+    if (verbose) cat(" to ", xright, "\n")
+
+    if (is.null(relwidth)) {
+        ## default relwidths
+        relwidth <- c(0.08, 0.08, 0.1, 0.3, 0.44, 0.44)
+        ## subset/make relative to selected types
+        relwidth <- relwidth[type] / sum(relwidth[type])
+    }
+
+    if (is.null(hort)) {
+        if (agedir == "h") hort <- c(F, F, F, F, F, F)[type]
+        else hort <- c(F, F, F, T, T, T)[type]
+    }
+
+    if (is.null(cex.text)) {
+        cex.text <- c(1, 1, 1, .8, .7, 0.7)[type]
+    }
+
+    ## this subfunction plots one gts bar
+    plotGTS <- function(xleft, xright, gts, ad, td = T, cex.t, textpos = NULL) {
+        ## add rectangles with appropriate colour
+        rect(if (ad == "h") gts$start else xleft,
+             if (ad == "h") xleft else gts$start,
+             if (ad == "h") gts$end else xright,
+             if (ad == "h") xright else gts$end,
+             col = gts$hex, border = darker(gts$hex))
+        ## add name in centre
+        ## TODO: if the centre is outside of the plot margins, add it to
+        ## the closest plot area
+        ## TODO: xright if Chron
+        text(if (ad == "h") gts$mean else mean(c(xleft, xright)),
+             if (ad == "h") mean(c(xleft, xright)) else gts$mean,
+             labels = gts$name,
+             srt = if (td) 0 else 90,
+             cex = cex.t, pos = textpos)
+    }
+
+    nbars <- sum(type)
+    totwidth <- diff(c(xleft, xright))
+    ## loop over type, so one loop is one bar of age info
+    for (bar in seq_len(nbars)) {
+        xright <- xleft + relwidth[bar] * totwidth
+        plotGTS(xleft, xright,
+                if (types[bar] != "Chron") GTS[GTS$type == types[bar], ]
+                else Chron,
+                ad = agedir, td = hort[bar], cex.t = cex.text[bar],
+                textpos = if (types[bar] != "Chron") NULL else NULL)
+                ## TODO: fix text position for chron to right of xright with pos = 4.
+        xleft <- xright
+    }
 }
+
+## TODO: create addChron function that does the same as addGTS but with
+## normal/reversed magnetostrat + names
 
 darker <- function(color = col, factor=1.4){
     col <- col2rgb(color)
@@ -668,3 +740,28 @@ lighter <- function(color = col, factor=1.4){
     col
 }
 
+## adds a linear model with confidence levels to the plot
+plotLM <- function(x = NULL, y = NULL, confidence = 0.90,
+                   col = "red", lty = 2, lwd = 1) {
+    ## linmod = NULL, 
+    ## if (is.null(linmod) && (is.null(x) && is.null(y))) stop("Specify x and y or linmod")
+    ## if (is.null(linmod)) linmod <- lm(y ~ x)
+    linmod <- lm(y ~ x)
+    ## TODO: doesn't work with only linmod because of variable names in newdata
+    ## plot(a,y,xlim=c(20,90),ylim=c(0,80))
+    abline(linmod, col="red")
+    newx <- seq(par("usr")[1], par("usr")[2], length.out = 100)
+    prd<-predict(linmod,
+                 newdata = data.frame(x = newx),
+                 interval = c("confidence"), 
+                 level = confidence, type="response")
+    lines(newx,prd[,2],col = col, lty = lty, lwd = lwd)
+    lines(newx,prd[,3],col = col, lty = lty, lwd = lwd)
+}
+
+## plots the R2 value of a linear model in a corner
+plotLMinfo <- function(linmod, pos = "topleft", digits = 4) {
+    lgd <- bquote(R^2~"="~.(format(summary(linmod)$adj.r.squared,
+                                           digits = digits)))
+    legend(pos, bty="n", legend = lgd)
+}
