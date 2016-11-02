@@ -45,6 +45,7 @@ stratPlot.numeric <- function(age, var,
                               ## vector of relative errors or matrix/df of absolute values to plot
                               error = NULL, errortype = "bars", # or "area"
                               errorcol = "#BEBEBEE6",
+                              errorlwd = 1, errorcode = 3,
                               gapsize = NULL,  # don't draw lines when agediff is larger
                               abc = NULL, abcadj = NULL, # add index letter topleft
                               mar = "inherit",  # or "auto" or specified
@@ -189,10 +190,14 @@ stratPlot.numeric <- function(age, var,
     ## plot error bars/area
     if (!is.null(error)) {
         if (length(error) > 0) {  # plot errorstuff
-            if(errortype == "bars") {
-                errorBarsPlot(age, var, error, col = errorcol, agedir = agedir)
-            } else if (errortype == "area")
-                errorAreaPlot(age, var, error, col = errorcol, agedir = agedir)
+            if("bars" %in% errortype) {
+                errorBarsPlot(age, var, error, col = errorcol, code = errorcode,
+                              agedir = agedir, lwd = errorlwd)
+            }
+            if ("area" %in% errortype) {
+                errorAreaPlot(age, var, error, col = errorcol,
+                              agedir = agedir)
+            }
         }
     }
 
@@ -301,28 +306,30 @@ stratPlot.numeric <- function(age, var,
 
 errorBarsPlot <- function(age, var = NULL, error,  # onesided if single vector!
                           width = diff(range(age)) / 100,
-                          col = "#BEBEBEE6",
+                          col = "#BEBEBEE6", code = 3,
+                          lwd = 1,
                           agedir = "h") {
     if (is.data.frame(error) || is.matrix(error) && ncol(error) == 2) {
         if (!(nrow(error) == 1 || nrow(error) == length(var)))
             warning("Number of rows in error not equal to var length, recycling")
         if (agedir == "h")
             arrows(age, error[, 1], age, error[,2], col = col, length = 0.05,
-                   angle = 90, code = 3)
+                   angle = 90, code = code, lwd = lwd)
         else if (agedir == "v")
             arrows(error[, 1], age, error[, 2], age, col = col, length = 0.05,
-                   angle = 90, code = 3)
+                   angle = 90, code = code, lwd = lwd)
     } else {
         if (!(length(error) == length(var) || length(error) == 1))
             warning("Length of error not equal to var length, recycling")
         if (agedir == "h") {
             arrows(x0 = age, y0 = var - error, x1 = age,
                    y1 = var + error, col = col, length = 0.05,
-                   angle = 90, code = 3)
+                   angle = 90, code = code, lwd = lwd)
         }
         else if (agedir == "v") {
             arrows(x0 = var - error, y0 = age, x1 = var + error,
-                   y1 = age, col = col, length = 0.05, angle = 90, code = 3)
+                   y1 = age, col = col, length = 0.05, angle = 90,
+                   code = code, lwd = lwd)
         }
     }
 }
