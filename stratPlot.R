@@ -40,7 +40,6 @@ stratPlot.numeric <- function(age, var,
                               pol = F, pol0 = NULL, polcol = "#4682B4E6", border = NA, 
                               ## bar to plot
                               bar = F, barcol = "orange", barlwd = 2,
-                              ##  gapmaker = NULL, # TODO
                               add = F,  # logical, add to plot or start new one
                               ## vector of relative errors or matrix/df of absolute values to plot
                               error = NULL, errortype = "bars", # or "area"
@@ -230,7 +229,7 @@ stratPlot.numeric <- function(age, var,
             addAxlab(xlab, i, adj = xlabadj, font = xlabfont, ang = xlabang, labadj = xlabalign)
         }
         for (i in yax) {
-            addAxis(i , lim = ylim, ntck = yntck, las = las)
+            addAxis(i, lim = ylim, ntck = yntck, las = las)
             addAxlab(ylab, i, adj = ylabadj, font = ylabfont, ang = ylabang, labadj = ylabalign)
         }
         if (GTS) {
@@ -323,14 +322,16 @@ stratPlot.data.frame <- function(var, # dataframe
                                  oneplot = F, # logical, if TRUE plot all variables in the same plot
                                  genframe = T, # show plots in same window
                                  add = F, error = NULL,    # vector of errors to plot (note: relative values!)
-                                 stacked = F, # logical, calculate cumulative sum for vars
+                                 stacked = F, # logical, calculate cumulative sum for vars, currently doesn't work.
                                  ..., xax = if (agedir == "h") 1 else 3, # default position of x-axis
                                  log = "",
                                  yax = 2,         # default position of yaxis
                                  las = 1,         # default direction of axis labels
                                  mar = "auto",    # generated based on xax and yax
                                  ylab = NULL, xlab = NULL, xlim = NULL,
-                                 ylim = NULL, bty = "n", col = "black",
+                                 ylim = NULL,
+                                 xntck = 2, yntck = 2,
+                                 bty = "n", col = "black",
                                  lwd = 1, lty = 1, type = "o", pch = 16,
                                  errortype = "bars", errorcol = "#BEBEBEE6",
                                  pol0 = NULL, polcol = "#4682BEE6", border = NULL,
@@ -503,15 +504,21 @@ stratPlot.data.frame <- function(var, # dataframe
     
     ##  call stratPlot.numeric, multiple times if necessary
     for (i in seq_len(nvar)) {
-        stratPlot(if (nvar == 1) { var } else if (stacked) { rowSums(var[, 1:i]) } else { var[, i] },
+        stratPlot(if (nvar == 1) {
+                      var
+                  } else if (stacked) {
+                      if (i == 1) var[, 1]
+                      else rowSums(var[, 1:i])
+                  } else { var[, i] },
                   age = age, agedir = agedir, gapsize = gapsize,
                   pol = if (exists("pols")) pols[i] else pol,
                   ## pol = pol[i],
                   bar = if (exists("bars")) bars[i] else bar,
-                  add = if (is.null(add)) { if (oneplot && i != 1) TRUE else FALSE } else { add },
+                  add = if (is.null(add)) { if ((oneplot || stacked) && i != 1) TRUE else FALSE } else { add },
                   error = error, xax = xax, yax = yax, mar = mar, ## TODO: change exists check for something else b/c it currently uses the global space
                   ylab = if (exists("ylabs")) ylabs[i] else ylab,
                   xlab = if (exists("xlabs")) xlabs[i] else xlab,
+                  xntck = xntck, yntck = yntck,
                   xlim = if (oneplot && age == "v") range(var, na.rm = TRUE) else xlim,
                   ylim = if (oneplot && age == "h") range(var, na.rm = TRUE) else if (exists("ylims")) ylims[[i]] else ylim,
                   bty = bty, lty = if (exists("ltys")) ltys[i] else lty,
@@ -521,7 +528,7 @@ stratPlot.data.frame <- function(var, # dataframe
                   pch = if (exists("pchs")) pchs[i] else pch,
                   log = if (exists("logs")) logs[i] else log,
                   errortype = errortype, errorcol = errorcol, pol0 = pol0,
-                  polcol = polcol, border = border, ...)
+                  polcol = if (exists("polcols")) polcols[i] else polcol, border = border, ...)
     }
     if (!is.null(legend)) {
         legend("topright", legend = legend, col = if(exists("cols")) cols else col,
@@ -558,29 +565,17 @@ insertEmpty <- function(df, afterrow) {
     return(df)
 }
 
-    if ((length(xax == 1) && xax %in% c(1, 3)) || identical(xax, c(1, 3))) {}
-    if ((length(yax) == 1 && yax %in% c(2, 4)) || identical(yax, c(2, 4))) {}
-
-addAxis <- function(ax = 1, lim = NULL, ntck = 2, tck = NULL, las = 1, ...) {
-    ## bottom or top x-axis
-    if (ax %in% c(1, 3)) {
+addAxis <- function(ax = 1, lim = NULL, ntck = NULL, tck = NULL, las = 1, ...) {
+    if (is.null(ntck)) ntck <- 2
+    if (ax %in% c(1, 3)) {  # bottom or top x-axis
         log <- par("xlog")
-        if(is.null(lim)) {
-            if (log) {
-                lim <- c(1e-100, 1e100)  # just use a mega range...
-            } else {
-                lim <- par("usr")[1:2]
-            }
+        if(is.null(lim) && log) {
+            lim <- c(1e-100, 1e100)  # just use a mega range...
         }
-        ## left or right y-axis
-    } else if (ax %in% c(2, 4)) {
+    } else if (ax %in% c(2, 4)) {  # left or right y-axis
         log <- par("ylog")
-        if (is.null(lim)) {
-            if (log) {
-                lim <- c(1e-100, 1e100)
-            } else {
-                lim <- par("usr")[3:4]
-            }
+        if (is.null(lim) && log) {
+            lim <- c(1e-100, 1e100)
         }
     } else stop("ax must be 1: bottom, 2: left, 3: top or 4: right")
     
@@ -602,13 +597,13 @@ addAxis <- function(ax = 1, lim = NULL, ntck = 2, tck = NULL, las = 1, ...) {
                              function(i) {
                                  as.expression(bquote(10^ .(i)))}),
              las = las, ...)
-    } else {
-        ## non-log axis
+    } else {  # non-log axis
+        ## default axis
         axis(ax, las = las, ...)
         ## find stepsize used in default axis
         if (is.null(tck)) 
-            stepsize <- abs(diff(axTicks(1)[1:2])) / ntck
-            ## add xntck ticks between
+            stepsize <- abs(diff(axTicks(ax)[1:2])) / ntck
+            ## add ntck ticks between
             tck <- seq(from = min(axTicks(ax)) - stepsize * ntck,
                        to = max(axTicks(ax)) + stepsize * ntck,
                        by = stepsize)
