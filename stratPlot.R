@@ -55,6 +55,12 @@ stratPlot.numeric <- function(age, var,
                               xax = if (agedir == "h") 1 else 3, yax = 2,
                               xlim = NULL, ylim = NULL, 
                               xlab = NULL, ylab = NULL,
+                              xlabfont = 1, ylabfont = 1,
+                              xlabadj = NA, ylabadj = NA,
+                              xlabalign = c(0.5, NA), ylabalign = c(0.5, NA),
+                              ## xlabpos = NULL, ylabpos = NULL,
+                              xlabang = NULL, ylabang = NULL,
+                              
                               ## positions of minor tick marks
                               xtck = NULL, ytck = NULL, 
                               ## number of minor tick marks between major marks
@@ -218,79 +224,15 @@ stratPlot.numeric <- function(age, var,
 
     ## add axes
     if (!add) {
-        if ((length(xax == 1) && xax %in% c(1, 3)) || identical(xax, c(1, 3))) {
-            ## if the x-axis is on a logarithmic scale
-            if (grepl("x", log)) {
-                ## the log10 range of powers that need something done
-                xpow <- c(
-                    if (xlim[1] == 0) -100
-                    else if (xlim[1] > 0) floor(log10(xlim[1]))
-                    else - floor(log10(-xlim[1])),
-                    if (xlim[2] == 0) -100
-                    else if (xlim[2] > 0) ceiling(log10(xlim[2]))
-                    else -ceiling(log10(-xlim[2]))) 
-                if (is.null(xtck)) 
-                    xtck <- c(1:10 %o% 10^((xpow)[1]:(xpow)[2]))
-                ## log x-axis with nicer 10^xpow labels
-                lapply(xax, axis, at = 10^(xpow[1]:xpow[2]),
-                       labels = sapply((xpow)[1]:(xpow)[2], # or -xpow[1]?
-                                       function(i) {
-                                           as.expression(bquote(10^ .(i)))}),
-                       las = las)
-            } else {
-                ## non-log x-axis
-                lapply(xax, axis, las = las)
-                ## find stepsize used in default axis
-                stepsize <- abs(diff(axTicks(1)[1:2])) / xntck
-                if (is.null(xtck)) 
-                    ## add xntck ticks between
-                    xtck <- seq(from = min(axTicks(xax[1])) - stepsize * xntck,
-                                to = max(axTicks(1)) + stepsize * xntck,
-                                by = stepsize)
-            }
-            ## minor x-axis tick marks
-            lapply(xax, axis, at = xtck, labels = FALSE, tcl = -.2)
+        ## lapply so that I can specify both 1 and 2 for example.
+        for (i in xax) {
+            addAxis(i, lim = xlim, ntck = xntck, las = las)
+            addAxlab(xlab, i, adj = xlabadj, font = xlabfont, ang = xlabang, labadj = xlabalign)
         }
-        if ((length(yax) == 1 && yax %in% c(2, 4)) || identical(yax, c(2, 4))) {
-            ## same for y-axis
-            if (grepl("y", log)) {
-                ## the log10 range of powers that need something done
-                ypow <- c(
-                    if (ylim[1] == 0) -100
-                    else if (ylim[1] > 0) floor(log10(ylim[1]))
-                    else - floor(log10(-ylim[1])),
-                    if (ylim[2] == 0) -100
-                    else if (ylim[2] > 0) ceiling(log10(ylim[2]))
-                    else -ceiling(log10(-ylim[2]))) 
-                if (is.null(ytck)) 
-                    ytck <- c(1:10 %o% 10^((ypow)[1]:(ypow)[2]))
-                ## log x-axis with nicer 10^xpow labels
-                lapply(yax, axis, at = 10^(ypow[1]:ypow[2]),
-                       labels = sapply((ypow)[1]:(ypow)[2], # or -xpow[1]?
-                                       function(i) {
-                                           as.expression(bquote(10^ .(i)))}),
-                       las = las)
-            } else {
-                ## non-log y-axis
-                lapply(yax, axis, las = las)
-                ## find stepsize used in default axis
-                stepsize <- abs(diff(axTicks(yax[1])[1:2])) / yntck
-                if (is.null(ytck)) 
-                    ## add xntck ticks between
-                    ytck <- seq(from = min(axTicks(yax[1])) - stepsize * yntck,
-                                to = max(axTicks(yax[1])) + stepsize * yntck,
-                                by = stepsize)
-            }
-            ## minor y-axis tick marks
-            lapply(yax, axis, at = ytck, labels = FALSE, tcl = -.2)
+        for (i in yax) {
+            addAxis(i , lim = ylim, ntck = yntck, las = las)
+            addAxlab(ylab, i, adj = ylabadj, font = ylabfont, ang = ylabang, labadj = ylabalign)
         }
-        ## add axis labels
-        if ((length(xax == 1) && xax %in% c(1, 3)) || identical(xax, c(1, 3)))
-            lapply(xax, function(i) {
-                mtext(xlab, side = i, line = if (grepl("x", log) || las == 1) 3 else 2)})
-        if ((length(yax == 1) && yax %in% c(2, 4)) || identical(yax, c(2, 4)))
-            lapply(yax, function(i) {
-                mtext(ylab, side = i, line = if (grepl("y", log) || las == 1) 3 else 2)})
         if (GTS) {
             addGTS(agedir = agedir, Era = F, Period = T, Epoch = T, Age = F, frac = GTSfrac)
         }
@@ -614,6 +556,115 @@ insertEmpty <- function(df, afterrow) {
     df <- df[order(df$id), ]
     df <- df[ , !names(df) %in% "id"]
     return(df)
+}
+
+    if ((length(xax == 1) && xax %in% c(1, 3)) || identical(xax, c(1, 3))) {}
+    if ((length(yax) == 1 && yax %in% c(2, 4)) || identical(yax, c(2, 4))) {}
+
+addAxis <- function(ax = 1, lim = NULL, ntck = 2, tck = NULL, las = 1, ...) {
+    ## bottom or top x-axis
+    if (ax %in% c(1, 3)) {
+        log <- par("xlog")
+        if(is.null(lim)) {
+            if (log) {
+                lim <- c(1e-100, 1e100)  # just use a mega range...
+            } else {
+                lim <- par("usr")[1:2]
+            }
+        }
+        ## left or right y-axis
+    } else if (ax %in% c(2, 4)) {
+        log <- par("ylog")
+        if (is.null(lim)) {
+            if (log) {
+                lim <- c(1e-100, 1e100)
+            } else {
+                lim <- par("usr")[3:4]
+            }
+        }
+    } else stop("ax must be 1: bottom, 2: left, 3: top or 4: right")
+    
+    ## if the axis is on a logarithmic scale
+    if (log) {
+        ## the log10 range of powers that need something done
+        pow <- c(
+            if (lim[1] == 0) -100
+            else if (lim[1] > 0) floor(log10(lim[1]))
+                else - floor(log10(-lim[1])),
+                if (lim[2] == 0) -100
+                else if (lim[2] > 0) ceiling(log10(lim[2]))
+                else -ceiling(log10(-lim[2]))) 
+        if (is.null(tck)) 
+            tck <- c(1:10 %o% 10^((pow)[1]:(pow)[2]))
+        ## log axis with nicer 10^pow labels for all the ax
+        axis(ax, at = 10^(pow[1]:pow[2]),
+             labels = sapply((pow)[1]:(pow)[2], # or -xpow[1]?
+                             function(i) {
+                                 as.expression(bquote(10^ .(i)))}),
+             las = las, ...)
+    } else {
+        ## non-log axis
+        axis(ax, las = las, ...)
+        ## find stepsize used in default axis
+        if (is.null(tck)) 
+            stepsize <- abs(diff(axTicks(1)[1:2])) / ntck
+            ## add xntck ticks between
+            tck <- seq(from = min(axTicks(ax)) - stepsize * ntck,
+                       to = max(axTicks(ax)) + stepsize * ntck,
+                       by = stepsize)
+    }
+    ## minor x-axis tick marks
+    axis(ax, at = tck, labels = FALSE, tcl = -.2)
+}
+
+## if (grepl("x", log) || las == 1) 3
+                                             ## else 2
+
+## add axis labels
+addAxlab <- function (lab = "", side = 1, line = 2, adj = NA, labadj = c(0.5, NA),
+                      ang = NULL, pos = NULL, font = 1, x = NULL, y = NULL, ...) {
+    ## add axis labels
+    ## no angle, and no specific x and y position for the label just use mtext
+    if (is.null(ang) || (!is.null(x) && !is.null(y))) {
+        mtext(lab, side = side, line = line, adj = adj, pos = pos, font = font, ...)
+    } else {
+        if (side %in% c(1, 3)) {  # default horizontal axis:
+            ## parse x from adj
+            if (is.null(x)) {
+                if (is.na(adj)) {
+                    x <- mean(par("usr")[1:2]) 
+                } else {
+                    x <- par("usr")[1] + diff(par("usr")[1:2]) * adj
+                }
+            }
+            ## parse y from line
+            if (is.null(y)) {
+                if (side == 1) {
+                    y <- par("usr")[3] - diff(par("usr")[3:4])/28 * line
+                } else if (side == 3) {
+                    y <- par("usr")[4] + diff(par("usr")[3:4])/28 * line
+                }
+            }
+        } else if (side %in% c(2, 4)) {  # vertical axis 
+            ## parse y from adj
+            if (is.null(y)) {
+                if (is.na(adj)) {
+                    y <- mean(par("usr")[3:4]) 
+                } else {
+                    y <- par("usr")[3] + diff(par("usr")[3:4]) * adj
+                }
+            }
+            ## parse x from line
+            if (is.null(x)) {
+                if (side == 2) {
+                    x <- par("usr")[1] - diff(par("usr")[1:2])/28 * line/2
+                } else if (side == 4) {
+                    x <- par("usr")[2] + diff(par("usr")[1:2])/28 * line/2
+                }
+            }
+        }
+        text(x, y, labels = lab, font = font, srt = ang, pos = pos, xpd = TRUE, adj = labadj, ...)
+    }
 }
 
 ## add large a/b/c in top left corner of current plot
