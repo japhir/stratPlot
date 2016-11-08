@@ -47,6 +47,8 @@ stratPlot.numeric <- function(age, var,
                               errorlwd = 1, errorcode = 3,
                               gapsize = NULL,  # don't draw lines when agediff is larger
                               abc = NULL, abcadj = NULL, # add index letter topleft
+                              exaggerate = NULL, # value of exaggeration line to add
+                              extype = "l",
                               mar = "inherit",  # or "auto" or specified
                               ##  TODO: add standard Geologic Time Scale to region near x or y axis
                               ...,  # other graphical parameters
@@ -190,6 +192,14 @@ stratPlot.numeric <- function(age, var,
         }
         polygon(x = if (agedir == "h") x else y, y = if (agedir == "h") y else x,
                 col = polcol, border = border) 
+    }
+
+    ## plot exaggeration
+    if (!is.null(exaggerate)) {
+        if (agedir == "h")
+            points(age, var * exaggerate, type = extype) 
+        else
+            points(var * exaggerate, age, type = extype)
     }
     
     ## plot error bars/area
