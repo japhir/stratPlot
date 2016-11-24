@@ -48,7 +48,7 @@ stratPlot.numeric <- function(age, var,
                               gapsize = NULL,  # don't draw lines when agediff is larger
                               abc = NULL, abcadj = NULL, # add index letter topleft
                               exaggerate = NULL, # value of exaggeration line to add
-                              extype = "l",
+                              extype = "l", exlty = 1, excol = "gray",
                               mar = "inherit",  # or "auto" or specified
                               ##  TODO: add standard Geologic Time Scale to region near x or y axis
                               ...,  # other graphical parameters
@@ -61,6 +61,7 @@ stratPlot.numeric <- function(age, var,
                               xlabalign = c(0.5, NA), ylabalign = c(0.5, NA),
                               ## xlabpos = NULL, ylabpos = NULL,
                               xlabang = NULL, ylabang = NULL,
+                              xaxlabs = NULL, yaxlabs = NULL,
                               
                               ## positions of minor tick marks
                               xtck = NULL, ytck = NULL, 
@@ -196,10 +197,9 @@ stratPlot.numeric <- function(age, var,
 
     ## plot exaggeration
     if (!is.null(exaggerate)) {
-        if (agedir == "h")
-            points(age, var * exaggerate, type = extype) 
-        else
-            points(var * exaggerate, age, type = extype)
+        points(if (agedir == "h") age else var * exaggerate,
+               if (agedir == "h") var * exaggerate else age,
+               type = extype, lty = exlty, col = excol) 
     }
     
     ## plot error bars/area
@@ -233,13 +233,13 @@ stratPlot.numeric <- function(age, var,
 
     ## add axes
     if (!add) {
-        ## lapply so that I can specify both 1 and 2 for example.
+        ## loop so that I can specify both 1 and 2 for example.
         for (i in xax) {
-            addAxis(i, lim = xlim, ntck = xntck, las = las)
+            addAxis(i, lim = xlim, ntck = xntck, las = las, labels = xaxlabs)
             addAxlab(xlab, i, adj = xlabadj, font = xlabfont, ang = xlabang, labadj = xlabalign)
         }
         for (i in yax) {
-            addAxis(i, lim = ylim, ntck = yntck, las = las)
+            addAxis(i, lim = ylim, ntck = yntck, las = las, labels = yaxlabs)
             addAxlab(ylab, i, adj = ylabadj, font = ylabfont, ang = ylabang, labadj = ylabalign)
         }
         if (GTS) {
@@ -343,9 +343,10 @@ stratPlot.data.frame <- function(var, # dataframe
                                  xntck = 2, yntck = 2,
                                  bty = "n", col = "black",
                                  lwd = 1, lty = 1, type = "o", pch = 16,
-                                 errortype = "bars", errorcol = "#BEBEBEE6",
-                                 pol0 = NULL, polcol = "#4682BEE6", border = NULL,
-                                 legend = NULL) {
+                                 errortype = "bars", pol0 = NULL, 
+                                 errorcol = "#BEBEBEE6", polcol = "#4682BEE6",
+                                 excol = "#325C87", barcol = "#325C87",
+                                 border = NULL, legend = NULL) {
     ## subset numeric columns
     ## var <- var[, sapply(var, is.numeric)]
     ##  TODO: do this as option?
@@ -490,6 +491,18 @@ stratPlot.data.frame <- function(var, # dataframe
         } else stop("Incorrect length of bar")
     }
 
+    if (length(barcol) > 1) {
+        if (length(barcol) == nvar) {
+            barcols <- barcol
+        } else stop("Incorrect length of barcol")
+    }
+
+    if (length(excol) > 1) {
+        if (length(excol) == nvar) {
+            excols <- excol
+        } else stop("Incorrect length of excol")
+    }
+
     if (is.list(ylim)){
         if (length(ylim) == nvar) {
             ylims <- ylim
@@ -538,7 +551,10 @@ stratPlot.data.frame <- function(var, # dataframe
                   pch = if (exists("pchs")) pchs[i] else pch,
                   log = if (exists("logs")) logs[i] else log,
                   errortype = errortype, errorcol = errorcol, pol0 = pol0,
-                  polcol = if (exists("polcols")) polcols[i] else polcol, border = border, ...)
+                  polcol = if (exists("polcols")) polcols[i] else polcol,
+                  barcol = if (exists("barcols")) barcols[i] else barcol,
+                  excol = if (exists("excols")) excols[i] else excol,
+                  border = border, ...)
     }
     if (!is.null(legend)) {
         legend("topright", legend = legend, col = if(exists("cols")) cols else col,
@@ -575,7 +591,8 @@ insertEmpty <- function(df, afterrow) {
     return(df)
 }
 
-addAxis <- function(ax = 1, lim = NULL, ntck = NULL, tck = NULL, las = 1, ...) {
+addAxis <- function(ax = 1, labels = NULL, lim = NULL, ntck = NULL,
+                    tck = NULL, las = 1, ...) {
     if (is.null(ntck)) ntck <- 2
     if (ax %in% c(1, 3)) {  # bottom or top x-axis
         log <- par("xlog")
@@ -602,14 +619,14 @@ addAxis <- function(ax = 1, lim = NULL, ntck = NULL, tck = NULL, las = 1, ...) {
         if (is.null(tck)) 
             tck <- c(1:10 %o% 10^((pow)[1]:(pow)[2]))
         ## log axis with nicer 10^pow labels for all the ax
-        axis(ax, at = 10^(pow[1]:pow[2]),
-             labels = sapply((pow)[1]:(pow)[2], # or -xpow[1]?
+        if (is.null(labels))
+            labels <- sapply((pow)[1]:(pow)[2], # or -xpow[1]?
                              function(i) {
-                                 as.expression(bquote(10^ .(i)))}),
-             las = las, ...)
+                                 as.expression(bquote(10^ .(i)))})
+        axis(ax, at = 10^(pow[1]:pow[2]), labels = labels, las = las, ...)
     } else {  # non-log axis
         ## default axis
-        axis(ax, las = las, ...)
+        axis(ax, las = las, labels = labels, ...)
         ## find stepsize used in default axis
         if (is.null(tck)) 
             stepsize <- abs(diff(axTicks(ax)[1:2])) / ntck
@@ -827,4 +844,85 @@ plotLMinfo <- function(linmod, pos = "topleft", digits = 4) {
     lgd <- bquote(R^2~"="~.(format(summary(linmod)$adj.r.squared,
                                            digits = digits)))
     legend(pos, bty="n", legend = lgd)
+}
+
+## convert excel species names to proper abbreviations
+prettyNames <- function(names) {
+    names <- str_replace_all(names, "\\.", " ") # remove all dots
+    names <- str_replace_all(names, "cpx *", "cpx\\. ") # add dots to abbrevs
+    names <- str_replace_all(names, "spp *", "spp\\. ")
+    names <- str_replace_all(names, "sp +", "sp\\. ")
+    names <- str_replace_all(names, "sf +", "sf\\. ")
+    names <- str_replace_all(names, "cf +", "cf\\. ")
+    names <- str_replace_all(names, "sp1 *", " sp1\\.")
+    names <- str_replace(names, "G *cyst +", "G-cyst ") # substitute dash
+    names <- str_replace(names, "P *cyst +", "G-cyst ")
+    ## specific fixes for my names
+    names <- str_replace_all(names, "Sp1 *", "sp1\\.") # erroneous capitalisation
+    names <- str_replace(names, "[A-Z] +", "K\\. ") # abbreviation for genus
+    names <- str_replace(names, "i D", "i/D") # uncertain
+    names <- str_replace(names, "2a *", "2a\"")  # indication of archeopyle position
+    names <- str_replace(names, "4 *", "\\+4\"") 
+    names <- str_replace(names, " +$", "") # trailing spaces
+    names <- str_replace_all(names, " +", " ") # multiple spaces
+    names
+}
+
+## plot species occurrence as a function of depth
+plotOccurrence <- function(dino, sort = "alphFO",
+                           depth = sampinfo$depth,
+                           ## age = sampinfo$age,
+                           speciesnames = prettyNames(names(dino)),
+                           dashheight = .2, xlim = range(sampinfo$depth),
+                           mar = c(2, 2, 5, 9) + .1, ...) { 
+    ## create a dataframe that holds first and last occurrences
+    dinoFO <- data.frame(dinos = names(dino), FO = NA, LO = NA)
+    
+    for (i in seq_along(dino)) {
+        ## samples at these depths have more than 0 dino's
+        dinodepth <- depth[dino[, i] > 0]
+        ## omit NAs
+        dinodepth <- dinodepth[!is.na(dinodepth)]
+        if (length(dinodepth) == 0)
+            dinodepth <- NA
+        dinoFO$FO[i] <- head(dinodepth, n = 1)
+        dinoFO$LO[i] <- tail(dinodepth, n = 1)
+    }
+
+    ## sort species by first occurrence
+    if (!grepl("alph|ABC|FO|first|bot|LO|last|top", sort))
+        stop ("sort based on 'FO', 'LO' or 'alph'")
+    ## sort by alphabet
+    if (grepl("alph|ABC", sort)) {
+        dinoFO <- dinoFO[rev(order(dinoFO$dinos)), ]
+    }
+    ## sort by FO/LO
+    if (grepl("FO|first|bot", sort)) {
+        dinoFO <- dinoFO[order(dinoFO$FO), ]
+    } else if (grepl("LO|last|top", sort)) {
+        dinoFO <- dinoFO[order(dinoFO$LO), ]
+    }
+
+    ## sort raw sheet by FO/LO
+    dino <- dino[, as.character(dinoFO$dinos)]
+
+    ## empty plot
+    stratPlot(range(sampinfo$depth), c(0, ncol(dino)),
+            type = "n", yaxt = "n", yax = NULL, xax = 3, mar = mar,
+            xlab = "Depth (mbsf)", xntck = 5, xlim = xlim, ...)
+   
+    ## available samples 
+    segments(depth, par("usr")[4], y1 = par("usr")[4] - 2 * dashheight,
+             lwd = 4, col = "red")
+
+    ## vertical dashes for samples that have dinos
+    for (i in seq_along(dino)) {
+        segments(depth[dino[, i] > 0], i - dashheight, 
+                 y1 = i + dashheight, lwd = 2)
+    }
+    ## plot all the lines and species names
+    ## horizontal lines between first and last occurrence
+    segments(dinoFO$LO, seq_along(dino), x1 = dinoFO$FO)
+    text(par("usr")[2], seq_along(dino), labels = speciesnames,
+         pos = 4, cex = .6, font = 3, xpd = T)
 }
