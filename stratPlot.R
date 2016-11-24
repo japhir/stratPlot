@@ -69,7 +69,7 @@ stratPlot.numeric <- function(age, var,
                               xntck = 2, yntck = 2,
                               ## default plot/log options
                               las = 1, log = "", bty = "n", type = "o",
-                              lty = 1, pch = 16) {
+                              lty = 1, pch = 16, verbose = TRUE) {
     ##  check var and age
     if (length(var) != length(age)) {
         stop("Unequal length of var and age")
@@ -115,28 +115,28 @@ stratPlot.numeric <- function(age, var,
         if (agedir == "h") {
             if (is.null(xlab)) {
                 if (max(age, na.rm = T) < 100) {
-                    message("Assuming age is given in Ma")
+                    if (verbose) message("Assuming age is given in Ma")
                     xlab <- "Age (Ma)"
                 } else {
-                    message("Assuming age is given in ka")
+                    if (verbose) message("Assuming age is given in ka")
                     xlab <- "Age (ka)"
                 }
             }
             if (is.null(ylab)) {
-                message("No ylab provided")
+                if (verbose) message("No ylab provided")
                 ylab <- ""
             }
         } else {
             if (is.null(xlab)) {
-                message("No xlab provided")
+                if (verbose) message("No xlab provided")
                 xlab <- ""
             }
             if (is.null(ylab)) {
                 if (max(age, na.rm = T) < 100) {
-                    message("Assuming age is given in Ma")
+                    if (verbose) message("Assuming age is given in Ma")
                     ylab <- "Age (Ma)"
                 } else {
-                    message("Assuming age is given in ka")
+                    if (verbose) message("Assuming age is given in ka")
                     ylab <- "Age (ka)"
                 }
             }
@@ -167,7 +167,7 @@ stratPlot.numeric <- function(age, var,
     ##  plot polygon
     if (pol) {
         if (anyNA(var) || anyNA(age)) {
-            message("NAs found in var/age, currently ignoring")
+            if (verbose) message("NAs found in var/age, currently ignoring")
             nona <- data.frame(var = var, age = age)
             nona <- nona[complete.cases(nona), ]
             x <- c(nona$age[1], nona$age, tail(nona$age, n = 1))
@@ -357,7 +357,7 @@ stratPlot.data.frame <- function(var, # dataframe
             stop("Length of age is unequal to nrow(var)")
         }
         ##  TODO add gapmaker support!
-        message("Assuming only variables in dataframe")
+        if (verbose) message("Assuming only variables in dataframe")
     } else { # only var is provided
         ##  find column that has age/depth
         depthcol <- grep("depth", names(var), ignore.case = TRUE)
@@ -392,7 +392,7 @@ stratPlot.data.frame <- function(var, # dataframe
             ## extract age/depth from var
             age  <- var[,  1]
             var  <- var[, -1]
-            message("Assuming age or depth in first column of var")
+            if (verbose) message("Assuming age or depth in first column of var")
         }
         
     }
@@ -415,7 +415,7 @@ stratPlot.data.frame <- function(var, # dataframe
                 }
             }
         } else {
-            message("Using varnames as ylabs")
+            if (verbose) message("Using varnames as ylabs")
             ylab <- names(var)
         }
         if (length(ylab) > 1 && length(ylab) == nvar) {
@@ -434,7 +434,7 @@ stratPlot.data.frame <- function(var, # dataframe
                 }
             }
         } else {
-            message("Using varnames as xlabs")
+            if (verbose) message("Using varnames as xlabs")
             xlabs <- names(var)
         }
         if (length(xlab) > 1 && length(xlab) == nvar) {
@@ -870,23 +870,51 @@ prettyNames <- function(names) {
 
 ## plot species occurrence as a function of depth
 plotOccurrence <- function(dino, sort = "alphFO",
-                           depth = sampinfo$depth,
-                           ## age = sampinfo$age,
+                           depth = NULL,
+                           xlab = "Age (Ma)",
+                           xax = 3,
+                           age = sampinfo$age,
+                           agemodel = NULL, # df w/ depth/age info
                            speciesnames = prettyNames(names(dino)),
-                           dashheight = .2, xlim = range(sampinfo$depth),
+                           dashheight = .2, dashlwd = 2, lwd = 2,
+                           namecex = 1,
+                           xlim = NULL, ylim = NULL,
                            mar = c(2, 2, 5, 9) + .1, ...) { 
-    ## create a dataframe that holds first and last occurrences
-    dinoFO <- data.frame(dinos = names(dino), FO = NA, LO = NA)
+    ## parameter validation
+    ## if (dino) # TODO: also work when dino is a vector in stead of a df!
+    ## TODO: check that length of depth == nrow of dino
+    ## if (length(depth) != nrow(dino))
+        ## stop ("Incorrect length of depth")
+    if (is.null(age)) {
+        if(!is.null(agemodel)) {
+            age <- tune(data.frame(depth = depth, id = seq_along(depth)),
+                        agemodel)$X1
+        } else {
+            warning("No age information specified!")
+        }
+    } else if (length(age) != nrow(dino))
+        stop ("Incorrect length of age")
     
+    ## create a dataframe that holds first and last occurrences
+    occ <- data.frame(dinos = names(dino),
+                      FOd = NA, LOd = NA,
+                      FOa = NA, LOa = NA)
+
     for (i in seq_along(dino)) {
         ## samples at these depths have more than 0 dino's
         dinodepth <- depth[dino[, i] > 0]
+        dinoage <- age[dino[, i] > 0]
         ## omit NAs
         dinodepth <- dinodepth[!is.na(dinodepth)]
+        dinoage <- dinoage[!is.na(dinoage)]
         if (length(dinodepth) == 0)
             dinodepth <- NA
-        dinoFO$FO[i] <- head(dinodepth, n = 1)
-        dinoFO$LO[i] <- tail(dinodepth, n = 1)
+        if (length(dinoage) == 0)
+            dinoage <- NA
+        occ$FOd[i] <- tail(dinodepth, n = 1)
+        occ$LOd[i] <- head(dinodepth, n = 1)
+        occ$FOa[i] <- tail(dinoage, n = 1)
+        occ$LOa[i] <- head(dinoage, n = 1)
     }
 
     ## sort species by first occurrence
@@ -894,35 +922,44 @@ plotOccurrence <- function(dino, sort = "alphFO",
         stop ("sort based on 'FO', 'LO' or 'alph'")
     ## sort by alphabet
     if (grepl("alph|ABC", sort)) {
-        dinoFO <- dinoFO[rev(order(dinoFO$dinos)), ]
+        occ <- occ[order(occ$dinos), ]
     }
     ## sort by FO/LO
     if (grepl("FO|first|bot", sort)) {
-        dinoFO <- dinoFO[order(dinoFO$FO), ]
+        occ <- occ[rev(order(occ$FOa)), ]
     } else if (grepl("LO|last|top", sort)) {
-        dinoFO <- dinoFO[order(dinoFO$LO), ]
+        occ <- occ[rev(order(occ$LOa)), ]
     }
 
     ## sort raw sheet by FO/LO
-    dino <- dino[, as.character(dinoFO$dinos)]
+    dino <- dino[, as.character(occ$dinos)]
 
+    if (is.null(ylim)) ylim <- c(ncol(dino), 0)
     ## empty plot
-    stratPlot(range(sampinfo$depth), c(0, ncol(dino)),
-            type = "n", yaxt = "n", yax = NULL, xax = 3, mar = mar,
-            xlab = "Depth (mbsf)", xntck = 5, xlim = xlim, ...)
+    stratPlot(range(age), c(0, ncol(dino)),
+              ylim = ylim, xlim = xlim, type = "n", # yaxt = "n",
+              yax = NULL, xax = xax, mar = mar,
+              xlab = xlab, xntck = 5, ...)
+    ## TODO: is agemodel required to plot the age axis?
+    ## ageaxis <- data.frame(age = seq(round(min(age), -1),
+    ##                                 round(max(age), -1)))
+    ## ageaxis$id <- seq_along(ageaxis$age)
+    ## ageaxis$depth <-
+    ##     tune(ageaxis, agemodel)
+    ## addAxis(3, labels = )
    
-    ## available samples 
-    segments(depth, par("usr")[4], y1 = par("usr")[4] - 2 * dashheight,
-             lwd = 4, col = "red")
+    ## available samples next to depth axis
+    ## segments(age, par("usr")[4], y1 = par("usr")[4] - 2 * dashheight,
+             ## lwd = 4, col = "red")
 
     ## vertical dashes for samples that have dinos
     for (i in seq_along(dino)) {
-        segments(depth[dino[, i] > 0], i - dashheight, 
-                 y1 = i + dashheight, lwd = 2)
+        segments(age[dino[, i] > 0], i - dashheight, 
+                 y1 = i + dashheight, lwd = dashlwd)
     }
     ## plot all the lines and species names
     ## horizontal lines between first and last occurrence
-    segments(dinoFO$LO, seq_along(dino), x1 = dinoFO$FO)
+    segments(occ$LOa, seq_along(dino), x1 = occ$FOa, lwd = lwd)
     text(par("usr")[2], seq_along(dino), labels = speciesnames,
-         pos = 4, cex = .6, font = 3, xpd = T)
+         pos = 4, cex = namecex, font = 3, xpd = T, )
 }
