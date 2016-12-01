@@ -4,21 +4,24 @@
 ## First version: 2014-04-11
 ## Latest version: 2016-10-26
 
-## ## test code
-##                                         # a vector
-## age <- c(0, 0.2, 0.3, 0.5, 0.8, 4, 13, 20, 40, 50, 90)
-## var <- c(1, 4, 5, 100, 400, 1000, 50000, 90000, 1000000, 1000000, 5000000)
-## err <- c(1.5, 10, 10, 40, 100, 100, 30000, 90000, 100000, 100000, 0)
-## stratPlot(age, var, ylab = pCO[2]~(ppm), ylim = c(1e-1, 1e6),
-## 	  pol = T, polcol = "#EEEEEE66", bar = T, barcol = "green",
-## 	  error = err,
-##           errorcol = "red",          
-## 	  abc = "A", abcadj = -0.5,
-## 	  xax = c(1, 3),
-## 	  xntck = 3,
-##           gapsize = 1,
+## test code
+## age <- c(0.1,  0.2, 0.3, 0.5, 0.8,     4,    13,    20,      40,      80, 120)
+## var <- c(1,    4,   5, 1e2, 4e2,  1e3, 5, 1e5, 20,  1e5, 5e6)
+## err <- 0.5#c(1.5, 10,  10,  40, 100,   100, 30000, 90000,     1e5,     5e5, 9e5)
+## ## postscript(encoding = "WinAnsi.enc")
+## stratPlot(age, var,
+##           ylab = pCO[2]~(ppmv)~(degree*C)~H[2]*O~TEX[86]^H~PVDB~("\u2030"),
+##           xlab = "Age (Ma)", 
+##           ylim = c(1e-1, 1e7),
+## 	  pol = T, polcol = "#EEEEEE66", pol0 = 1e-1,
+##           bar = T, barcol = "green",
+## 	  error = err, errorcol = "red", #errortype = "region",         
+## 	  abc = "A", abcadj = -3,
+## 	  xax = c(1, 3), xntck = 5, xaxs = "i",
+##           ## gapsize = 20,
 ##           log = "y", mar = "auto")
-## addGTS(age, 5e-2, 1e0)
+## addGTS(xleft = 3e-2, 5e-1, hort = c(T, T, T, T, T, F))
+## addAxlab("hoi", 3, ang = 45, adj = 0, y = 1e8)
 
 ## stratPlot(data.frame(var0 = c(1, 4, 5, 100, 400, 1000, 50000, 90000, 1000000, 1000000),
 ##                      age = seq(100, 1000, length.out = 10),  # automatically extracts age column
@@ -296,7 +299,7 @@ errorAreaPlot <- function(age, var = NULL, error,
         if (nrow(error) != length(var))
             warning("Number of rows in error not equal to var length, recycling")
         x <- c(age, rev(age))
-        y <- c(error[,1], error[,2])
+        y <- c(error[,1], rev(error[,2]))
     } else {
         if (anyNA(var) | anyNA(age)) {
             enc <- rle(!is.na(var))             # calculate amount of non-NA polygons
@@ -716,7 +719,7 @@ addGTS <- function(age, xleft = NULL, xright = NULL, frac = 0.05,
     ## read GTS table with color and age info
     ## todo: make this sharable
     if (sum(types %in% alltypes[1:5]) > 0) {
-        GTS <- read.csv("~/Dropbox/DepthPlotter/GTS_colours.csv", stringsAsFactors = F)
+        GTS <- read.csv("GTS_colours.csv", stringsAsFactors = F)
         GTS$hex <- rgb(GTS$R, GTS$G, GTS$B, maxColorValue = 255)
         GTS$mean <- (GTS$end - GTS$start) / 2 + GTS$start
         ## order the type factor
@@ -725,7 +728,7 @@ addGTS <- function(age, xleft = NULL, xright = NULL, frac = 0.05,
 
     ## read chron table
     if (sum(types %in% alltypes[6]) > 0) {
-        Chron <- read.csv("~/Dropbox/DepthPlotter/Chronages.csv", stringsAsFactors = F)
+        Chron <- read.csv("Chronages.csv", stringsAsFactors = F)
         Chron$name <- Chron$Pol
         Chron$hex <- "#000000"
         Chron$hex[grepl("r", Chron$Pol)] <- "#FFFFFF"
