@@ -1,4 +1,4 @@
-# stratPlotter
+# stratPlot
 The stratPlot function allows you to easily create depth and age profile plots
 in R. 
 

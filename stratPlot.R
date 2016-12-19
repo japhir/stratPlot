@@ -34,7 +34,7 @@ stratPlot <- function(var, ...){
 }
 
 ## Creates a plot based on a depth/age vector and a variable vector
-stratPlot.numeric <- function(age, var, 
+stratPlot.default <- function(age, var, 
                               ## direction of age "v", "ver", "vertical" or "h" "hor" "horizontal"
                               agedir = "h",
                               ## GTS colour scale on age axis
@@ -59,12 +59,14 @@ stratPlot.numeric <- function(age, var,
                               xax = if (agedir == "h") 1 else 3, yax = 2,
                               xlim = NULL, ylim = NULL, 
                               xlab = NULL, ylab = NULL,
+                              labline = 2, 
                               xlabfont = 1, ylabfont = 1,
                               xlabadj = NA, ylabadj = NA,
                               xlabalign = c(0.5, NA), ylabalign = c(0.5, NA),
                               ## xlabpos = NULL, ylabpos = NULL,
                               xlabang = NULL, ylabang = NULL,
                               xaxlabs = NULL, yaxlabs = NULL,
+                              xlabcex = 1, ylabcex = 1,
                               
                               ## positions of minor tick marks
                               xtck = NULL, ytck = NULL, 
@@ -207,16 +209,21 @@ stratPlot.numeric <- function(age, var,
     
     ## plot error bars/area
     if (!is.null(error)) {
-        if (length(error) > 0) {  # plot errorstuff
-            if("bars" %in% errortype) {
-                errorBarsPlot(age, var, error, col = errorcol, code = errorcode,
-                              agedir = agedir, lwd = errorlwd)
-            }
-            if ("area" %in% errortype) {
-                errorAreaPlot(age, var, error, col = errorcol,
-                              agedir = agedir)
-            }
+        ## if (length(error) > 0) {  # plot errorstuff
+        if (!all(errortype %in% c("bars", "area"))) {
+            stop(paste0("Incorrect errortype '",
+                        errortype,
+                        "', specify errortype as 'bars' or 'area'"))
         }
+        if("bars" %in% errortype) {
+            errorBarsPlot(age, var, error, col = errorcol, code = errorcode,
+                          agedir = agedir, lwd = errorlwd)
+        }
+        if ("area" %in% errortype) {
+            errorAreaPlot(age, var, error, col = errorcol,
+                          agedir = agedir)
+        }
+        ## }
     }
 
     ##  plot bars (added after errors to overlap the possible areas)
@@ -239,11 +246,13 @@ stratPlot.numeric <- function(age, var,
         ## loop so that I can specify both 1 and 2 for example.
         for (i in xax) {
             addAxis(i, lim = xlim, ntck = xntck, las = las, labels = xaxlabs)
-            addAxlab(xlab, i, adj = xlabadj, font = xlabfont, ang = xlabang, labadj = xlabalign)
+            addAxlab(xlab, i, line = labline, adj = xlabadj, font = xlabfont,
+                     ang = xlabang, labadj = xlabalign, cex = xlabcex)
         }
         for (i in yax) {
             addAxis(i, lim = ylim, ntck = yntck, las = las, labels = yaxlabs)
-            addAxlab(ylab, i, adj = ylabadj, font = ylabfont, ang = ylabang, labadj = ylabalign)
+            addAxlab(ylab, i, line = labline, adj = ylabadj, font = ylabfont,
+                     ang = ylabang, labadj = ylabalign, cex = ylabcex)
         }
         if (GTS) {
             addGTS(agedir = agedir, Era = F, Period = T, Epoch = T, Age = F, frac = GTSfrac)
@@ -646,12 +655,14 @@ addAxis <- function(ax = 1, labels = NULL, lim = NULL, ntck = NULL,
                                              ## else 2
 
 ## add axis labels
-addAxlab <- function (lab = "", side = 1, line = 2, adj = NA, labadj = c(0.5, NA),
-                      ang = NULL, pos = NULL, font = 1, x = NULL, y = NULL, ...) {
+addAxlab <- function (lab = "", side = 1, line = 2, adj = NA,
+                      labadj = c(0.5, NA), cex = 1, ang = NULL, pos = NULL,
+                      font = 1, x = NULL, y = NULL, ...) {
     ## add axis labels
     ## no angle, and no specific x and y position for the label just use mtext
     if (is.null(ang) || (!is.null(x) && !is.null(y))) {
-        mtext(lab, side = side, line = line, adj = adj, pos = pos, font = font, ...)
+        mtext(lab, side = side, line = line, adj = adj, pos = pos,
+              font = font, cex = cex, ...)
     } else {
         if (side %in% c(1, 3)) {  # default horizontal axis:
             ## parse x from adj
@@ -688,7 +699,8 @@ addAxlab <- function (lab = "", side = 1, line = 2, adj = NA, labadj = c(0.5, NA
                 }
             }
         }
-        text(x, y, labels = lab, font = font, srt = ang, pos = pos, xpd = TRUE, adj = labadj, ...)
+        text(x, y, labels = lab, font = font, srt = ang, pos = pos, xpd = TRUE,
+             adj = labadj, cex = cex, ...)
     }
 }
 
@@ -719,7 +731,7 @@ addGTS <- function(age, xleft = NULL, xright = NULL, frac = 0.05,
     ## read GTS table with color and age info
     ## todo: make this sharable
     if (sum(types %in% alltypes[1:5]) > 0) {
-        GTS <- read.csv("GTS_colours.csv", stringsAsFactors = F)
+        GTS <- read.csv("~/Dropbox/stratPlot/GTS_colours.csv", stringsAsFactors = F)
         GTS$hex <- rgb(GTS$R, GTS$G, GTS$B, maxColorValue = 255)
         GTS$mean <- (GTS$end - GTS$start) / 2 + GTS$start
         ## order the type factor
@@ -728,7 +740,7 @@ addGTS <- function(age, xleft = NULL, xright = NULL, frac = 0.05,
 
     ## read chron table
     if (sum(types %in% alltypes[6]) > 0) {
-        Chron <- read.csv("Chronages.csv", stringsAsFactors = F)
+        Chron <- read.csv("~/Dropbox/stratPlot/Chronages.csv", stringsAsFactors = F)
         Chron$name <- Chron$Pol
         Chron$hex <- "#000000"
         Chron$hex[grepl("r", Chron$Pol)] <- "#FFFFFF"
@@ -843,10 +855,17 @@ plotLM <- function(x = NULL, y = NULL, confidence = 0.90,
 }
 
 ## plots the R2 value of a linear model in a corner
-plotLMinfo <- function(linmod, pos = "topleft", digits = 4) {
-    lgd <- bquote(R^2~"="~.(format(summary(linmod)$adj.r.squared,
+plotLMinfo <- function(linmod, pos = "topleft", formula.offset = 1, digits = 4) {
+    r2 <- bquote(R^2~"="~.(format(summary(linmod)$adj.r.squared,
                                            digits = digits)))
-    legend(pos, bty="n", legend = lgd)
+    form <- bquote("y ="~.(format(summary(linmod)$coefficients[2],
+                                  digits = digits))~
+                      "x +"~.(format(summary(linmod)$coefficients[1],
+                                  digits = digits)))
+    lgdinfo <- legend(pos, bty="n", legend = form, trace = T)
+    legend(lgdinfo$rect$left, lgdinfo$rect$top + formula.offset,
+           bty="n", legend = r2, trace = T)
+
 }
 
 ## convert excel species names to proper abbreviations
@@ -857,13 +876,14 @@ prettyNames <- function(names) {
     names <- str_replace_all(names, "sp +", "sp\\. ")
     names <- str_replace_all(names, "sf +", "sf\\. ")
     names <- str_replace_all(names, "cf +", "cf\\. ")
+    names <- str_replace(names, "I +", "I\\. ") # for Impagidinium sp. cf. I. brevisulcatum
     names <- str_replace_all(names, "sp1 *", " sp1\\.")
     names <- str_replace(names, "G *cyst +", "G-cyst ") # substitute dash
     names <- str_replace(names, "P *cyst +", "G-cyst ")
     ## specific fixes for my names
     names <- str_replace_all(names, "Sp1 *", "sp1\\.") # erroneous capitalisation
     names <- str_replace(names, "[A-Z] +", "K\\. ") # abbreviation for genus
-    names <- str_replace(names, "i D", "i/D") # uncertain
+    ## names <- str_replace(names, "i D", "i/D") # uncertain
     names <- str_replace(names, "2a *", "2a\"")  # indication of archeopyle position
     names <- str_replace(names, "4 *", "\\+4\"") 
     names <- str_replace(names, " +$", "") # trailing spaces
