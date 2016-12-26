@@ -59,7 +59,7 @@ stratPlot.default <- function(age, var,
                               xax = if (agedir == "h") 1 else 3, yax = 2,
                               xlim = NULL, ylim = NULL, 
                               xlab = NULL, ylab = NULL,
-                              labline = 2, 
+                              xlabline = 2, ylabline = 2, 
                               xlabfont = 1, ylabfont = 1,
                               xlabadj = NA, ylabadj = NA,
                               xlabalign = c(0.5, NA), ylabalign = c(0.5, NA),
@@ -246,12 +246,12 @@ stratPlot.default <- function(age, var,
         ## loop so that I can specify both 1 and 2 for example.
         for (i in xax) {
             addAxis(i, lim = xlim, ntck = xntck, las = las, labels = xaxlabs)
-            addAxlab(xlab, i, line = labline, adj = xlabadj, font = xlabfont,
+            addAxlab(xlab, i, line = xlabline, adj = xlabadj, font = xlabfont,
                      ang = xlabang, labadj = xlabalign, cex = xlabcex)
         }
         for (i in yax) {
             addAxis(i, lim = ylim, ntck = yntck, las = las, labels = yaxlabs)
-            addAxlab(ylab, i, line = labline, adj = ylabadj, font = ylabfont,
+            addAxlab(ylab, i, line = ylabline, adj = ylabadj, font = ylabfont,
                      ang = ylabang, labadj = ylabalign, cex = ylabcex)
         }
         if (GTS) {
