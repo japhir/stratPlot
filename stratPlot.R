@@ -4,6 +4,8 @@
 ## First version: 2014-04-11
 ## Latest version: 2016-10-26
 
+library(astrochron)
+
 ## test code
 ## age <- c(0.1,  0.2, 0.3, 0.5, 0.8,     4,    13,    20,      40,      80, 120)
 ## var <- c(1,    4,   5, 1e2, 4e2,  1e3, 5, 1e5, 20,  1e5, 5e6)
@@ -358,10 +360,9 @@ stratPlot.data.frame <- function(var, # dataframe
                                  errortype = "bars", pol0 = NULL, 
                                  errorcol = "#BEBEBEE6", polcol = "#4682BEE6",
                                  excol = "#325C87", barcol = "#325C87",
-                                 border = NULL, legend = NULL) {
-    ## subset numeric columns
-    ## var <- var[, sapply(var, is.numeric)]
-    ##  TODO: do this as option?
+                                 border = NULL, legend = NULL, verbose = TRUE) {
+    ## subset numeric columns var <- var[, sapply(var, is.numeric)] TODO: do
+    ## this as option?
 
     ##  check var and age
     if (!is.null(age)){
@@ -986,3 +987,147 @@ plotOccurrence <- function(dino, sort = "alphFO",
     text(par("usr")[2], seq_along(dino), labels = speciesnames,
          pos = 4, cex = namecex, font = 3, xpd = T, )
 }
+
+## read core and section information from iodp tamu and calculate bottom depth and/or ages
+ReadCoreInfo <- function(data, # "coreholesum.csv",
+                         age.model = NULL, # df/matrix w/ 1: depth, 2: age
+                         ## names of columns in data
+                         top.depth = "Top.mbsf.",
+                         bot.depth = "Bot.mbsf.",
+                         diff.depth = "Rec.m.",
+                         hole.name = "H",
+                         core.name = "Cor",
+                         section.name = "Sc",
+                         site.name = "Site",
+                         top.age = "Top.age", 
+                         bot.age = "Bot.age",
+                         ## further read.csv options, i.e. `stringsAsFactors = F'
+                         ...) {
+    ## Read core data and subset with appropriate defaults
+    ah <- read.csv(data, ...)
+    names <- colnames(ah)
+
+    ## validate data function for all columns
+    incorrect.col.name <- function(column, type = "warning", data = ah) {
+        if (!column %in% names) {
+            if (type == "warning") {
+                warning("ah$", column,
+                        " doesn't exist. Specify correct column name from: \n",
+                        names)
+            } else if (type == "stop") {
+                stop("Available column names are: ", names, "\n",
+                     "ah$", column,
+                     " doesn't exist, but is needed.")
+            }
+        }
+    }
+
+    incorrect.col.name(top.depth, type = "stop")
+    incorrect.col.name(diff.depth, type = if(bot.depth %in% names) "warning" else "stop")
+    incorrect.col.name(hole.name)
+    incorrect.col.name(core.name)
+    incorrect.col.name(section.name)
+    incorrect.col.name(site.name)
+
+    ## generate Bot.depth if it doesn't exist in data
+    if (!bot.depth %in% names) {
+        message("ah$", bot.depth, " not specified, calculating...")
+        ah[, bot.depth] <- ah[, top.depth] + ah[, diff.depth]
+    }
+   
+    ## calculate ages with agemodel
+    if (!any(c(bot.age, top.age) %in% names) && !is.null(age.model)) {
+        ## top age
+        if (!top.age %in% names) {
+            message("Calculating ", top.age, " from ", top.depth, " with age model")
+            ah[, top.age] <- tune(ah[, c(top.depth, seq_len(nrow(data)))],
+                                  agem[, 1:2],
+                                  genplot = FALSE,
+                                  verbose = FALSE,
+                                  extrapolate = TRUE)$X1
+        }
+        ## bot age
+        if (!bot.age %in% names) {
+            message("Calculating ", bot.age, " from ", bot.depth, " with age model")
+            ah[, bot.age] <- tune(ah[, c(bot.depth, seq_len(nrow(data)))],
+                                  agem[, 1:2],
+                                  genplot = FALSE,
+                                  verbose = FALSE,
+                                  extrapolate = TRUE)$X1
+        }
+    } 
+    return(ah)
+}
+
+## TODO: make this more general w/ regex for cor and sc
+ReadPhotos <- function(cores = integer(), sections = integer(), 
+                       directory = "data/section_images/",
+                       pattern = ".png|.jpg") {
+    ## read png images with names such as 959D20R-1.png in specified directory
+    corepics <- data.frame(list.files(directory, pattern = pattern), 
+                           stringsAsFactors = FALSE)
+    names(corepics)[1] <- "files"
+    # get core and section information from filename
+    corepics$Cor <- as.integer(substr(corepics$files, 5, 6))
+    corepics$Sc  <- as.factor(sapply(strsplit(sub(pattern, "", 
+                                                  corepics$files), "-"), "[[", 2))
+    # subset cores and sections of interest
+    corepics <- SubsetCores(corepics, cores, sections, 
+                            core.name = "Cor", section.name = "Sc")
+    return(corepics)
+}
+
+## TODO: make this more general
+LoadPhotos <- function(cores = integer(), sections = integer(), 
+                       filenames = ReadPhotos(cores, sections)$files, 
+                       dir = "data/core_photos/section_images") {
+    imgs <- lapply(seq_along(filenames), function(i) {
+        as.raster(readPNG(paste(dir, filenames[i], sep = "/")))
+    })
+    names(imgs) <- filenames
+    return(imgs)
+}
+
+## TODO: make this more general
+PlotCoreRange <- function(xleft, xright, 
+                          cores = integer(), 
+                          sections = integer(), 
+                          col = "lightblue",
+                          ah  = ReadCores(cores),
+                          ahs = ReadSections(cores, sections),
+                          add = TRUE, labels = TRUE, border = darker(col),
+                          agedir = "v", 
+                          cex = 1, ytype = "depth", ...) {
+    if (!add) { PlotBlank(xleft, xright, cores, sections, ah = ah, ytype = ytype)}
+    # plot core and section boxes at specified x-position
+    if (agedir == "v") {
+        if (ytype == "depth") {
+            rect(xleft, ah$Bot.mbsf, xright, ah$Top.mbsf., col = col, border = border, ...)
+            if (labels) {  
+                text(mean(c(xleft, xright)), (ah$Top.mbsf. + ah$Bot.mbsf) / 2, ah$Cor, 
+                     cex = cex)#, srt = 90)
+            }
+        } else if (ytype == "age") {
+            rect(xleft, ah$Bot.age, xright, ah$Top.age, col = col, border = border, ...)
+            if (labels) {
+                text(mean(c(xleft, xright)), (ah$Top.age + ah$Bot.age) / 2, ah$Cor,
+                     cex = cex)#, srt = 90)
+            }
+        }
+    } else if (agedir == "h") {
+        if (ytype == "depth") {
+            rect(ah$Bot.mbsf, xleft, ah$Top.mbsf., xright, col = col, border = border, ...)
+            if (labels) {  
+                text((ah$Top.mbsf. + ah$Bot.mbsf) / 2, mean(c(xleft, xright)), ah$Cor, 
+                     cex = cex)#, srt = 90)
+            }
+        } else if (ytype == "age") {
+            rect(ah$Bot.age, xleft, ah$Top.age, xright, col = col, border = border, ...)
+            if (labels) {
+                text((ah$Top.age + ah$Bot.age) / 2, mean(c(xleft, xright)), ah$Cor,
+                     cex = cex)#, srt = 90)
+            }
+        }
+    }
+}
+
