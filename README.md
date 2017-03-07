@@ -1,8 +1,8 @@
-# stratPlot
-The stratPlot function allows you to easily create depth and age profile plots
+# StratPlot
+The StratPlot function allows you to easily create depth and age profile plots
 in R. 
 
-The files that you need are `stratPlot.R`, if you're plotting Magnetochron ages 
+The files that you need are `StratPlot.R`, if you're plotting Magnetochron ages 
 `Chronages.csv`, and if you're plotting time GTS2012 time scales `GTS_colours.csv`.
 
 ## Usage
@@ -51,13 +51,13 @@ dinos <- data.frame(code = paste0("IJK", 1:10),
                     Dinospecies2 = rnorm(10, 10, 5),
                     Dinospecies3 = rnorm(10, 25, 20))
 par(mfrow = c(1, 3))
-stratPlot(dinos, pol = T, bar = T, xlim = c(0, 60))
+StratPlot(dinos, pol = T, bar = T, xlim = c(0, 60))
 
 # data with known error values
 set.seed(1)
 temp <- data.frame(age = 41:50, 
 	           temp = rnorm(10, 30, 5),
 		   error = rnorm(10, 2.5, 1))
-stratPlot(temp$age, temp$temp, xlab = Temperature~(degree~C), 
+StratPlot(temp$age, temp$temp, xlab = Temperature~(degree~C), 
           ylab = "Age (Ma)", error = temp$error)
 ```
