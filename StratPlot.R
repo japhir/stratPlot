@@ -2,70 +2,138 @@
 ## Ilja Kocken
 ## Student of Marine Sciences at Utrecht University
 ## First version: 2014-04-11
-## Latest version: 2016-10-26
+## Latest version: 2017-03-07
 
+## Plot your age/depth data beautifully, with options for logaritmic axes, easy
+## polygon- and bar plots plus options to add Geologic Time Scale information.
+
+## necessary libraries for certain functions
 library(astrochron)  # for tuning stratigraphic series
 library(png)         # for working with png images
 library(jpeg)        # for working with jpg images
 library(rasterImage) # for transposing images, might not work w/ Windows!
 library(raster)      # for working with raster images
 
-stratPlot <- function(var, ...){
-    UseMethod("stratPlot", var)
+StratPlot <- function(var, ...){
+    ## S3-method for the main plotting function
+    ## Args:
+    ##     var: the variable to plot: a dataframe, vector, matrix or list
+    ##     ...: other arguments
+    UseMethod("StratPlot", var)
 }
 
-## Creates a plot based on a depth/age vector and a variable vector
-stratPlot.default <- function(age, var, 
-                              ## direction of age "v", "ver", "vertical" or "h" "hor" "horizontal"
-                              age.dir = "h",
-                              ## GTS colour scale on age axis
-                              GTS = F, Era = F, Period = T, Epoch = T, Age = F, GTSfrac = .05,
-                              ## polygon to plot
-                              pol = F, pol0 = NULL, polcol = "#4682B4E6", border = NA, 
-                              ## bar to plot
-                              bar = F, barcol = "orange", barlwd = 2,
-                              add = F,  # logical, add to plot or start new one
-                              ## vector of relative errors or matrix/df of absolute values to plot
-                              error = NULL, errortype = "bars", # or "area"
-                              errorcol = "#BEBEBEE6",
-                              errorlwd = 1, errorcode = 3,
-                              gapsize = NULL,  # don't draw lines when agediff is larger
-                              abc = NULL, abcadj = NULL, # add index letter topleft
-                              exaggerate = NULL, # value of exaggeration line to add
-                              extype = "l", exlty = 1, excol = "gray",
-                              mar = "inherit",  # or "auto" or specified
-                              ##  TODO: add standard Geologic Time Scale to region near x or y axis
-                              ...,  # other graphical parameters
-                              ## default positions of axes (1:4)
+StratPlot.default <- function(age, var, age.dir = "h", GTS = F,
+                              pol = F, pol0 = NULL, pol.col = "#4682B4E6",
+                              border = NA, bar = F, bar.col = "orange",
+                              bar.lwd = 2, add = F, error = NULL,
+                              error.type = "bars", error.col = "#BEBEBEE6",
+                              error.lwd = 1, error.code = 3, gap.size = NULL,
+                              abc = NULL, abc.adj = NULL, exaggerate = NULL,
+                              ex.type = "l", ex.lty = 1, ex.col = "gray",
+                              mar = "inherit",
                               xax = if (age.dir == "h") 1 else 3, yax = 2,
-                              xlim = NULL, ylim = NULL, 
-                              xlab = NULL, ylab = NULL,
-                              xlabline = 2, ylabline = 2, 
-                              xlabfont = 1, ylabfont = 1,
-                              xlabadj = NA, ylabadj = NA,
-                              xlabalign = c(0.5, NA), ylabalign = c(0.5, NA),
-                              ## xlabpos = NULL, ylabpos = NULL,
-                              xlabang = NULL, ylabang = NULL,
-                              xaxlabs = NULL, yaxlabs = NULL,
-                              xlabcex = 1, ylabcex = 1,
-                              
-                              ## positions of minor tick marks
-                              xtck = NULL, ytck = NULL, 
-                              ## number of minor tick marks between major marks
-                              xntck = 2, yntck = 2,
-                              ## default plot/log options
-                              las = 1, log = "", bty = "n", type = "o",
-                              lty = 1, pch = 16, verbose = TRUE) {
+                              xlim = NULL, ylim = NULL, xlab = NULL,
+                              ylab = NULL, xlab.line = 2, ylab.line = 2,
+                              xlab.font = 1, ylab.font = 1, xlab.adj = NA,
+                              ylab.adj = NA, xlab.align = c(0.5, NA),
+                              ylab.align = c(0.5, NA), 
+                              xlab.ang = NULL, ylab.ang = NULL, xax.labs = NULL,
+                              yax.labs = NULL, xlab.cex = 1, ylab.cex = 1,
+                              xtck = NULL, ytck = NULL, xntck = 2, yntck = 2,
+                              las = 1, log = "", bty = "n", type = "o", lty = 1,
+                              pch = 16, verbose = TRUE, ...) {
+    ## Creates a plot based on a depth/age vector and a variable vector
+    ## Args:
+    ##     age: vector with age or depth information
+    ##     var:
+    ## age.dir: direction of age "v", "ver", "vertical" or "h" "hor" "horizontal"
+    ## GTS colour scale on age axis
+    ## value of exaggeration line to add
+    ## polygon to plot
+    ## bar to plot
+    ## mar: or "auto" or specified
+    ## logical, add to plot or start new one
+    ## vector of relative errors or matrix/df of absolute values to plot
+    ## don't draw lines when agediff is larger
+    ## add index letter topleft
+    ## positions of minor tick marks
+    ## number of minor tick marks between major marks
+    ## default plot/log options
+    ## default positions of axes (1:4)
+    ## other graphical parameters
+
+    ## age:
+    ## var:
+    ## age.dir = "h"
+    ## GTS = F:
+    ## pol = F:
+    ## pol0 = NULL:
+    ## pol.col = "#4682B4E6",
+    ## border = NA:
+    ## bar = F:
+    ## bar.col = "orange",
+    ## bar.lwd = 2:
+    ## add = F:
+    ## error = NULL:
+    ## error.type = "bars":
+    ## error.col = "#BEBEBEE6":
+    ## error.lwd = 1:
+    ## error.code = 3:
+    ## gap.size = NULL:
+    ## abc = NULL:
+    ## abc.adj = NULL:
+    ## exaggerate = NULL:
+    ## ex.type = "l":
+    ## ex.lty = 1:
+    ## ex.col = "gray":
+    ## mar = "inherit":
+    ## xax = if (age.dir == "h") 1 else 3:
+    ## yax = 2:
+    ## xlim = NULL:
+    ## ylim = NULL:
+    ## xlab = NULL:
+    ## ylab = NULL:
+    ## xlab.line = 2:
+    ## ylab.line = 2:
+    ## xlab.font = 1:
+    ## ylab.font = 1:
+    ## xlab.adj = NA:
+    ## ylab.adj = NA:
+    ## xlab.align = c(0.5, NA):
+    ## ylab.align = c(0.5, NA):
+    ## xlab.ang = NULL:
+    ## ylab.ang = NULL:
+    ## xax.labs = NULL:
+    ## yax.labs = NULL:
+    ## xlab.cex = 1:
+    ## ylab.cex = 1:
+    ## xtck = NULL:
+    ## ytck = NULL:
+    ## xntck = 2:
+    ## yntck = 2:
+    ## las = 1:
+    ## log = "":
+    ## bty = "n":
+    ## type = "o":
+    ## lty = 1:
+    ## pch = 16:
+    ## verbose = TRUE:
+    ## ...:
+    
+    ## Era = F, Period = T, Epoch = T, Age = F, GTSfrac = .05,
+    ## TODO: add standard Geologic Time Scale to region near x or y axis
+    ## xlab.pos = NULL, ylab.pos = NULL,
+
+   
     ##  check var and age
     if (length(var) != length(age)) {
         stop("Unequal length of var and age")
     }
 
-    ## TODO
     ## insert gaps where needed
-    if (!is.null(gapsize)) {
-        toolarge <- which(diff(age) > gapsize)
-        df <- insertEmpty(data.frame(age, var), toolarge)
+    if (!is.null(gap.size)) {
+        too.large <- which(diff(age) > gap.size)
+        df <- InsertEmpty(data.frame(age, var), too.large)
         age <- df$age
         var <- df$var
     }
@@ -178,30 +246,30 @@ stratPlot.default <- function(age, var,
             y <- c(pol0, var, pol0)
         }
         polygon(x = if (age.dir == "h") x else y, y = if (age.dir == "h") y else x,
-                col = polcol, border = border) 
+                col = pol.col, border = border) 
     }
 
     ## plot exaggeration
     if (!is.null(exaggerate)) {
         points(if (age.dir == "h") age else var * exaggerate,
                if (age.dir == "h") var * exaggerate else age,
-               type = extype, lty = exlty, col = excol) 
+               type = ex.type, lty = ex.lty, col = ex.col) 
     }
     
     ## plot error bars/area
     if (!is.null(error)) {
         ## if (length(error) > 0) {  # plot errorstuff
-        if (!all(errortype %in% c("bars", "area"))) {
-            stop(paste0("Incorrect errortype '",
-                        errortype,
-                        "', specify errortype as 'bars' or 'area'"))
+        if (!all(error.type %in% c("bars", "area"))) {
+            stop(paste0("Incorrect error.type '",
+                        error.type,
+                        "', specify error.type as 'bars' or 'area'"))
         }
-        if("bars" %in% errortype) {
-            errorBarsPlot(age, var, error, col = errorcol, code = errorcode,
-                          age.dir = age.dir, lwd = errorlwd)
+        if ("bars" %in% error.type) {
+            ErrorBarsPlot(age, var, error, col = error.col, code = error.code,
+                          age.dir = age.dir, lwd = error.lwd)
         }
-        if ("area" %in% errortype) {
-            errorAreaPlot(age, var, error, col = errorcol,
+        if ("area" %in% error.type) {
+            ErrorAreaPlot(age, var, error, col = error.col,
                           age.dir = age.dir)
         }
         ## }
@@ -214,7 +282,7 @@ stratPlot.default <- function(age, var,
                  y0 = if (age.dir == "h") rep(pol0, length(var)) else age,
                  x1 = if (age.dir == "h") age else var,
                  y1 = if (age.dir == "h") var else age,
-                 col = barcol, lwd = barlwd)
+                 col = bar.col, lwd = bar.lwd)
     }
     
     ##  plot the actual record
@@ -226,60 +294,80 @@ stratPlot.default <- function(age, var,
     if (!add) {
         ## loop so that I can specify both 1 and 2 for example.
         for (i in xax) {
-            addAxis(i, lim = xlim, ntck = xntck, las = las, labels = xaxlabs)
-            addAxlab(xlab, i, line = xlabline, adj = xlabadj, font = xlabfont,
-                     ang = xlabang, labadj = xlabalign, cex = xlabcex)
+            AddAxis(i, lim = xlim, ntck = xntck, las = las, labels = xax.labs)
+            AddAxLab(xlab, i, line = xlab.line, adj = xlab.adj, font = xlab.font,
+                     ang = xlab.ang, lab.adj = xlab.align, cex = xlab.cex)
         }
         for (i in yax) {
-            addAxis(i, lim = ylim, ntck = yntck, las = las, labels = yaxlabs)
-            addAxlab(ylab, i, line = ylabline, adj = ylabadj, font = ylabfont,
-                     ang = ylabang, labadj = ylabalign, cex = ylabcex)
+            AddAxis(i, lim = ylim, ntck = yntck, las = las, labels = yax.labs)
+            AddAxLab(ylab, i, line = ylab.line, adj = ylab.adj, font = ylab.font,
+                     ang = ylab.ang, lab.adj = ylab.align, cex = ylab.cex)
         }
         if (GTS) {
-            addGTS(age.dir = age.dir, Era = F, Period = T, Epoch = T, Age = F, frac = GTSfrac)
+            AddGTS(age.dir = age.dir, Era = F, Period = T, Epoch = T, Age = F, frac = GTSfrac)
         }
     }
     
     ## add corner ABC
-    if(!is.null(abc)) {
-        if (is.null(abcadj)) abcadj <- 0.04 * abs(diff(par("usr")[1:2])) 
-        addABC(abc, abcadj)
+    if (!is.null(abc)) {
+        if (is.null(abc.adj)) {
+            abc.adj <- 0.04 * abs(diff(par("usr")[1:2])) 
+        }
+        AddABC(abc, abc.adj)
     }
 }
 
-
-errorBarsPlot <- function(age, var = NULL, error,  # onesided if single vector!
-                          width = diff(range(age)) / 100,
-                          col = "#BEBEBEE6", code = 3,
-                          lwd = 1,
-                          age.dir = "h") {
+ErrorBarsPlot <- function(age, var = NULL, error, col = "#BEBEBEE6", code = 3,
+                          lwd = 1, length = 0.05, angle = 90, age.dir = "h") {
+    ## add error bars to a plot
+    ## Args:
+    ##     age:  a vector of age/depth values
+    ##     var:  a vector of the variable of interest
+    ##   error:  a vector/matrix/dataframe of error values
+    ##     col:  the colour of the error bars
+    ##    code:  the code of the 'arrows' argument, 3 is caps
+    ##     lwd:  the line width of the error bars
+    ##  length:  the length of the whiskers of the error bars
+    ##   angle:  the angle of the arrows to be drawn, default 90 degrees
+    ## age.dir:  the direction that age is plotted in, "h" or "v"
+    ## data frame or matrix with two columns
     if (is.data.frame(error) || is.matrix(error) && ncol(error) == 2) {
+        ## Error handling
         if (!(nrow(error) == 1 || nrow(error) == length(var)))
             warning("Number of rows in error not equal to var length, recycling")
         if (age.dir == "h")
-            arrows(age, error[, 1], age, error[,2], col = col, length = 0.05,
-                   angle = 90, code = code, lwd = lwd)
+            arrows(age, error[, 1], age, error[, 2], col = col, length = length,
+                   angle = angle, code = code, lwd = lwd)
         else if (age.dir == "v")
-            arrows(error[, 1], age, error[, 2], age, col = col, length = 0.05,
-                   angle = 90, code = code, lwd = lwd)
-    } else {
+            arrows(error[, 1], age, error[, 2], age, col = col, length = length,
+                   angle = angle, code = code, lwd = lwd)
+    } else {  # single (vector of) error value(s)
         if (!(length(error) == length(var) || length(error) == 1))
             warning("Length of error not equal to var length, recycling")
         if (age.dir == "h") {
-            arrows(x0 = age, y0 = var - error, x1 = age,
-                   y1 = var + error, col = col, length = 0.05,
-                   angle = 90, code = code, lwd = lwd)
+            arrows(x0 = age, y0 = var - error, x1 = age, y1 = var + error,
+                   col = col, length = length, angle = angle, code = code,
+                   lwd = lwd)
         }
         else if (age.dir == "v") {
-            arrows(x0 = var - error, y0 = age, x1 = var + error,
-                   y1 = age, col = col, length = 0.05, angle = 90,
-                   code = code, lwd = lwd)
+            arrows(x0 = var - error, y0 = age, x1 = var + error, y1 = age,
+                   col = col, length = length, angle = angle, code = code,
+                   lwd = lwd)
         }
     }
 }
 
-errorAreaPlot <- function(age, var = NULL, error, 
-                          col = "#BEBEBE4D", age.dir = "h") {
+ErrorAreaPlot <- function(age, var = NULL, error, col = "#BEBEBE4D",
+                          age.dir = "h", ...) {
+    ## add an error area to a plot
+    ## Args:
+    ##     age:  a vector of age/depth values
+    ##     var:  a vector of the variable of interest
+    ##   error:  a vector/matrix/dataframe of error values
+    ##     col:  the colour of the error bars
+    ## age.dir:  the direction that age is plotted in, "h" or "v"
+    ##     ...:  other arguments for the polygon function
+    ## Error handling
     if (!is.numeric(error) && is.null(var))
         stop("Provide either dataframe/matrix of low and high error values or vector of relative error values.")
     ##  error is a dataframe/matrix with 2 columns for negative and positive
@@ -289,13 +377,13 @@ errorAreaPlot <- function(age, var = NULL, error,
         if (nrow(error) != length(var))
             warning("Number of rows in error not equal to var length, recycling")
         x <- c(age, rev(age))
-        y <- c(error[,1], rev(error[,2]))
+        y <- c(error[, 1], rev(error[, 2]))
     } else {
         if (anyNA(var) | anyNA(age)) {
             enc <- rle(!is.na(var))             # calculate amount of non-NA polygons
             endIdxs <- cumsum(enc$lengths)      # lengths of polygons
             for (i in seq_along(enc$lengths)){  # for each polygon
-                if(enc$values[i]){              # for non-na regions
+                if (enc$values[i]){              # for non-na regions
                     endIdx <- endIdxs[i]
                     startIdx <- endIdx - enc$lengths[i] + 1
                     
@@ -313,15 +401,14 @@ errorAreaPlot <- function(age, var = NULL, error,
         }
     }
     polygon(x = if (age.dir == "h") x else y, y = if (age.dir == "h") y else x,
-            col = col, border = NA)
+            col = col, border = NA, ...)
 }
 
-##  Takes a dataframe of one or multiple variable(s) to  create a (set of) plot(s)
-stratPlot.data.frame <- function(var, # dataframe
+StratPlot.data.frame <- function(var, # dataframe
                                  age = NULL, # optional vector 
                                  age.dir = "h",  # "v", "ver", "vertical" or "h" "hor" "horizontal" 
                                  pol = F, bar = F,        # polygon/bar
-                                 gapsize = NULL,  # lines not drawn for timesteps > gapsize
+                                 gap.size = NULL,  # lines not drawn for timesteps > gap.size
                                  oneplot = F, # logical, if TRUE plot all variables in the same plot
                                  genframe = T, # show plots in same window
                                  add = F, error = NULL,    # vector of errors to plot (note: relative values!)
@@ -336,12 +423,14 @@ stratPlot.data.frame <- function(var, # dataframe
                                  xntck = 2, yntck = 2,
                                  bty = "n", col = "black",
                                  lwd = 1, lty = 1, type = "o", pch = 16,
-                                 errortype = "bars", pol0 = NULL, 
-                                 errorcol = "#BEBEBEE6", polcol = "#4682BEE6",
-                                 excol = "#325C87", barcol = "#325C87",
-                                 border = NULL, legend = NULL, verbose = TRUE) {
-    ## subset numeric columns var <- var[, sapply(var, is.numeric)] TODO: do
-    ## this as option?
+                                 error.type = "bars", pol0 = NULL, 
+                                 error.col = "#BEBEBEE6", pol.col = "#4682BEE6",
+                                 ex.col = "#325C87", bar.col = "#325C87",
+                                 border = NULL, legend = NULL) {
+    ##  Takes a dataframe of one or multiple variable(s) to  create a (set of) plot(s)
+    ## subset numeric columns
+    ## var <- var[, sapply(var, is.numeric)]
+    ##  TODO: do this as option?
 
     ##  check var and age
     if (!is.null(age)){
@@ -352,35 +441,39 @@ stratPlot.data.frame <- function(var, # dataframe
         if (verbose) message("Assuming only variables in dataframe")
     } else { # only var is provided
         ##  find column that has age/depth
-        depthcol <- grep("depth", names(var), ignore.case = TRUE)
-        if (length(depthcol) > 1) warning("multiple depth columns found, using first")
-        agecol <- grep("age|time", names(var), ignore.case = TRUE)
-        if (length(agecol) > 1) warning("multiple age columns found, using first")
-        ## depthcol found but agecol isn't
-        if (length(depthcol) >= 1 && length(agecol) == 0) {
+        depth.col <- grep("depth", names(var), ignore.case = TRUE)
+        if (length(depth.col) > 1) warning("multiple depth columns found, using first")
+        age.col <- grep("age|time", names(var), ignore.case = TRUE)
+        if (length(age.col) > 1) warning("multiple age columns found, using first")
+        ## depth.col found but age.col isn't
+        if (length(depth.col) >= 1 && length(age.col) == 0) {
             ## extract age/depth from var
-            age <- var[, depthcol[1]]
-            var <- var[, -depthcol[1]]
+            age <- var[, depth.col[1]]
+            var <- var[, -depth.col[1]]
 
             ##  overwrite agelab if default
             if (age.dir == "h") {
-                if (is.null(xlab)) xlab <- "Depth (mbsf)"
+                if (is.null(xlab)) {
+                    xlab <- "Depth (mbsf)"
+                }
             } else if (age.dir == "v") {
-                if (is.null(ylab)) ylab <- "Depth (mbsf)"
+                if (is.null(ylab)) {
+                    ylab <- "Depth (mbsf)"
+                }
             }
-        ## agecol found but depthcol isn't
-        } else if (length(depthcol) == 0 && length(agecol) >= 1) {
+        ## age.col found but depth.col isn't
+        } else if (length(depth.col) == 0 && length(age.col) >= 1) {
             ## extract age/depth from var
-            age <- var[, agecol[1]]
-            var <- var[, -agecol[1]]
-        ## both agecol and depthcol found, using agecol
-        } else if (length(depthcol) > 0 && length(agecol) > 0) {
+            age <- var[, age.col[1]]
+            var <- var[, -age.col[1]]
+        ## both age.col and depth.col found, using age.col
+        } else if (length(depth.col) > 0 && length(age.col) > 0) {
             ##  TODO: interactive selection of desired age
             ## extract age/depth from var
-            age <- var[, agecol[1]]  # for now we just use age if both are available
+            age <- var[, age.col[1]]  # for now we just use age if both are available
             ##  omit depth and age
-            var <- var[, - c(depthcol[1], agecol[1])] 
-        } else { # no depthcol, no agecol found: use first column
+            var <- var[, - c(depth.col[1], age.col[1])] 
+        } else { # no depth.col, no age.col found: use first column
             ## extract age/depth from var
             age  <- var[,  1]
             var  <- var[, -1]
@@ -390,7 +483,11 @@ stratPlot.data.frame <- function(var, # dataframe
     }
 
     ##  number of variables after extraction of age
-    if (is.vector(var)) nvar <- 1 else nvar <- ncol(var)
+    if (is.vector(var)) {
+        nvar <- 1
+    } else {
+        nvar <- ncol(var)
+    }
 
     ##  parsing of x- and ylab 
     if (age.dir == "h") {
@@ -415,11 +512,11 @@ stratPlot.data.frame <- function(var, # dataframe
         }
     } else { # age.dir = v
         if (!is.null(xlab)) {
-            if(length(xlab) > 1 && length(xlab) != nvar){ 
+            if (length(xlab) > 1 && length(xlab) != nvar){ 
                 stop("Incorrect length of xlab")
             }
             if (class(xlab) == "formula"){
-                if(length(xlab == 1)) {
+                if (length(xlab == 1)) {
                     xlab <- as.expression(xlab)
                 } else {
                     xlabs <- lapply(xlab, as.expression)
@@ -471,10 +568,10 @@ stratPlot.data.frame <- function(var, # dataframe
         } else stop("Incorrect length of pol")
     }
 
-    if (length(polcol) > 1) {
-        if (length(polcol) == nvar) {
-            polcols <- polcol
-        } else stop("Incorrect length of polcol")
+    if (length(pol.col) > 1) {
+        if (length(pol.col) == nvar) {
+            pol.cols <- pol.col
+        } else stop("Incorrect length of pol.col")
     }
 
     if (length(bar) > 1) {
@@ -483,16 +580,16 @@ stratPlot.data.frame <- function(var, # dataframe
         } else stop("Incorrect length of bar")
     }
 
-    if (length(barcol) > 1) {
-        if (length(barcol) == nvar) {
-            barcols <- barcol
-        } else stop("Incorrect length of barcol")
+    if (length(bar.col) > 1) {
+        if (length(bar.col) == nvar) {
+            bar.cols <- bar.col
+        } else stop("Incorrect length of bar.col")
     }
 
-    if (length(excol) > 1) {
-        if (length(excol) == nvar) {
-            excols <- excol
-        } else stop("Incorrect length of excol")
+    if (length(ex.col) > 1) {
+        if (length(ex.col) == nvar) {
+            ex.cols <- ex.col
+        } else stop("Incorrect length of ex.col")
     }
 
     if (is.list(ylim)){
@@ -500,7 +597,7 @@ stratPlot.data.frame <- function(var, # dataframe
             ylims <- ylim
         } else stop("Incorrect length of ylim")
     }
-    ##  TODO: also do this for bty?, errortype, errorcol, pol0 and border?
+    ##  TODO: also do this for bty?, error.type, error.col, pol0 and border?
     if (length(log) > 1) {
         if (length(log) == nvar) {
             logs <- log
@@ -517,23 +614,23 @@ stratPlot.data.frame <- function(var, # dataframe
         }
     }
     
-    ##  call stratPlot.numeric, multiple times if necessary
+    ##  call StratPlot.numeric, multiple times if necessary
     for (i in seq_len(nvar)) {
-        stratPlot(if (nvar == 1) {
+        StratPlot(if (nvar == 1) {
                       var
                   } else if (stacked) {
                       if (i == 1) var[, 1]
                       else rowSums(var[, 1:i])
-                  } else { var[, i] },
-                  age = age, age.dir = age.dir, gapsize = gapsize,
-                  pol = if (exists("pols")) pols[i] else pol,
-                  ## pol = pol[i],
+                  } else { var[, i] }, age = age, age.dir = age.dir,
+                  gap.size = gap.size,
+                  pol = if (exists("pols")) pols[i] else pol, ## pol = pol[i],
                   bar = if (exists("bars")) bars[i] else bar,
                   add = if (is.null(add)) { if ((oneplot || stacked) && i != 1) TRUE else FALSE } else { add },
                   error = error, xax = xax, yax = yax, mar = mar, ## TODO: change exists check for something else b/c it currently uses the global space
                   ylab = if (exists("ylabs")) ylabs[i] else ylab,
-                  xlab = if (exists("xlabs")) xlabs[i] else xlab,
-                  xntck = xntck, yntck = yntck,
+                  xlab = if (exists("xlabs")) xlabs[i] else xlab, xntck = xntck,
+                  yntck = yntck,
+
                   xlim = if (oneplot && age == "v") range(var, na.rm = TRUE) else xlim,
                   ylim = if (oneplot && age == "h") range(var, na.rm = TRUE) else if (exists("ylims")) ylims[[i]] else ylim,
                   bty = bty, lty = if (exists("ltys")) ltys[i] else lty,
@@ -542,38 +639,54 @@ stratPlot.data.frame <- function(var, # dataframe
                   type = if (exists("types")) types[i] else type,
                   pch = if (exists("pchs")) pchs[i] else pch,
                   log = if (exists("logs")) logs[i] else log,
-                  errortype = errortype, errorcol = errorcol, pol0 = pol0,
-                  polcol = if (exists("polcols")) polcols[i] else polcol,
-                  barcol = if (exists("barcols")) barcols[i] else barcol,
-                  excol = if (exists("excols")) excols[i] else excol,
+                  error.type = error.type, error.col = error.col, pol0 = pol0,
+                  pol.col = if (exists("pol.cols")) pol.cols[i] else pol.col,
+                  bar.col = if (exists("bar.cols")) bar.cols[i] else bar.col,
+                  ex.col = if (exists("ex.cols")) ex.cols[i] else ex.col,
                   border = border, ...)
     }
     if (!is.null(legend)) {
-        legend("topright", legend = legend, col = if(exists("cols")) cols else col,
+        legend("topright", legend = legend, col = if (exists("cols")) cols else col,
                lty = if (exists("ltys")) ltys else lty,
                lwd = if (exists("lwds")) lwds else lwd,
                pch = if (exists("pchs")) pchs else pch)
     }
 }
 
-stratPlot.list <- function(ls, ...) {
-    lapply(ls, stratPlot, ...)
+StratPlot.list <- function(ls, ...) {
+    ## apply the stratplotter to all the elements of a list
+    ## Args:
+    ##   ls: the list who's elements are to be plotted
+    ##  ...: other arguments
+    lapply(ls, StratPlot, ...)
 }
 
-##  subset dataframe to range of age/depth
-subsetRange <- function(dat, min, max, column = "depth") {
+SubsetRange <- function(dat, min, max, column = "depth") {
+    ## subset dataframe to range of age/depth
+    ## Args:
+    ##    dat: the dataframe to be subsetted
+    ##    min: the minimum value to subset by
+    ##    max: the maxiumum value to subset by
+    ## column: the column name to subset by
     return(dat[dat[, column] > min & dat[, column] < max, ])
 }
 
-##  insert empty rows between values that differ more than gapsize
-gapMaker <- function(df, gapsize = .5, varname = "age") {
-    toolarge <- which(diff(df[, varname]) > gapsize)
-    df <- insertEmpty(df, toolarge)
+GapMaker <- function(df, gap.size = .5, column = "age") {
+    ## insert empty rows between values that differ more than gap.size
+    ## Args:
+    ##       df: the data frame
+    ## gap.size: the size of the gaps
+    ##   column: the column name to base gaps on
+    too.large <- which(diff(df[, column]) > gap.size)
+    df <- InsertEmpty(df, too.large)
     return(df)
 }
 
-##  insert empty rows in df after afterrow
-insertEmpty <- function(df, afterrow) {
+InsertEmpty <- function(df, afterrow) {
+    ## insert empty rows in a dataframe after afterrow
+    ## Args:
+    ##       df: the dataframe
+    ## afterrow: empty row is inserted after this row
     ##  create indices for the data order
     df$id <- seq_len(nrow(df))
     df[max(df$id) + seq_along(afterrow), ] <- NA
@@ -583,12 +696,23 @@ insertEmpty <- function(df, afterrow) {
     return(df)
 }
 
-addAxis <- function(ax = 1, labels = NULL, lim = NULL, ntck = NULL,
+AddAxis <- function(ax = 1, labels = NULL, lim = NULL, ntck = NULL,
                     tck = NULL, las = 1, ...) {
-    if (is.null(ntck)) ntck <- 2
+    ## adds a pretty axis, with minor ticks and pretty log options
+    ## Args:
+    ##     ax:
+    ## labels:
+    ##    lim:
+    ##   ntck:
+    ##    tck:
+    ##    las:
+    ##    ...:
+    if (is.null(ntck)) {
+        ntck <- 2
+    }
     if (ax %in% c(1, 3)) {  # bottom or top x-axis
         log <- par("xlog")
-        if(is.null(lim) && log) {
+        if (is.null(lim) && log) {
             lim <- c(1e-100, 1e100)  # just use a mega range...
         }
     } else if (ax %in% c(2, 4)) {  # left or right y-axis
@@ -632,13 +756,26 @@ addAxis <- function(ax = 1, labels = NULL, lim = NULL, ntck = NULL,
 }
 
 ## if (grepl("x", log) || las == 1) 3
-                                             ## else 2
+## else 2
 
-## add axis labels
-addAxlab <- function (lab = "", side = 1, line = 2, adj = NA,
-                      labadj = c(0.5, NA), cex = 1, ang = NULL, pos = NULL,
+AddAxLab <- function (lab = "", side = 1, line = 2, adj = NA,
+                      lab.adj = c(0.5, NA), cex = 1, ang = NULL, pos = NULL,
                       font = 1, x = NULL, y = NULL, ...) {
     ## add axis labels
+    ## Args:
+    ##     lab:
+    ##    side:
+    ##    line:
+    ##     adj:
+    ## lab.adj: 
+    ##     cex:
+    ##     ang:
+    ##     pos:
+    ##    font:
+    ##       x:
+    ##       y:
+    ##     ...:
+
     ## no angle, and no specific x and y position for the label just use mtext
     if (is.null(ang) || (!is.null(x) && !is.null(y))) {
         mtext(lab, side = side, line = line, adj = adj, pos = pos,
@@ -680,13 +817,13 @@ addAxlab <- function (lab = "", side = 1, line = 2, adj = NA,
             }
         }
         text(x, y, labels = lab, font = font, srt = ang, pos = pos, xpd = TRUE,
-             adj = labadj, cex = cex, ...)
+             adj = lab.adj, cex = cex, ...)
     }
 }
 
-## add large a/b/c in top left corner of current plot
-addABC <- function(char = "A", xadj = 0.04 * abs(diff(par("usr")[1:2])),
+AddABC <- function(char = "A", xadj = 0.04 * abs(diff(par("usr")[1:2])),
                     yadj = 0.04 * abs(diff(par("usr")[3:4])), cex = 2) {
+    ## add large a/b/c in top left corner of current plot
     ## TODO: also work for log axes
     xpos <- par("usr")[1] + xadj
     ypos <- par("usr")[4] + yadj
@@ -694,15 +831,19 @@ addABC <- function(char = "A", xadj = 0.04 * abs(diff(par("usr")[1:2])),
     ## text(xpos, ypos, char, cex = cex, xpd = NA)
 }
 
-addGTS <- function(age, xleft = NULL, xright = NULL, frac = 0.05,
+AddGTS <- function(age, xleft = NULL, xright = NULL, frac = 0.05,
                    agelim = range(age), age.dir = "h",
                    type = NULL,
                    Eon = T, Era = T, Period = T, Epoch = T, Age = T,
                    Chron = T,
-                   hort = NULL, relwidth = NULL, cex.text = NULL,
+                   horizontal.text = NULL, relwidth = NULL, cex.text = NULL,
                    verbose = T) {
+    ## Add Geologic Time Scale information to a plot
+
     ## check types
-    if (is.null(type)) type <- c(Eon, Era, Period, Epoch, Age, Chron)
+    if (is.null(type)) {
+        type <- c(Eon, Era, Period, Epoch, Age, Chron)
+    }
     ## subset types to plot
     alltypes = c("Eon", "Era", "Period", "Epoch", "Age", "Chron")
     types <- alltypes[type]
@@ -711,7 +852,7 @@ addGTS <- function(age, xleft = NULL, xright = NULL, frac = 0.05,
     ## read GTS table with color and age info
     ## todo: make this sharable
     if (sum(types %in% alltypes[1:5]) > 0) {
-        GTS <- read.csv("~/Dropbox/stratPlot/GTS_colours.csv", stringsAsFactors = F)
+        GTS <- read.csv("~/Dropbox/StratPlot/GTS_colours.csv", stringsAsFactors = F)
         GTS$hex <- rgb(GTS$R, GTS$G, GTS$B, maxColorValue = 255)
         GTS$mean <- (GTS$end - GTS$start) / 2 + GTS$start
         ## order the type factor
@@ -720,7 +861,7 @@ addGTS <- function(age, xleft = NULL, xright = NULL, frac = 0.05,
 
     ## read chron table
     if (sum(types %in% alltypes[6]) > 0) {
-        Chron <- read.csv("~/Dropbox/stratPlot/Chronages.csv", stringsAsFactors = F)
+        Chron <- read.csv("~/Dropbox/StratPlot/Chronages.csv", stringsAsFactors = F)
         Chron$name <- Chron$Pol
         Chron$hex <- "#000000"
         Chron$hex[grepl("r", Chron$Pol)] <- "#FFFFFF"
@@ -755,9 +896,9 @@ addGTS <- function(age, xleft = NULL, xright = NULL, frac = 0.05,
         relwidth <- relwidth[type] / sum(relwidth[type])
     }
 
-    if (is.null(hort)) {
-        if (age.dir == "h") hort <- c(F, F, F, F, F, F)[type]
-        else hort <- c(F, F, F, T, T, T)[type]
+    if (is.null(horizontal.text)) {
+        if (age.dir == "h") horizontal.text <- c(F, F, F, F, F, F)[type]
+        else horizontal.text <- c(F, F, F, T, T, T)[type]
     }
 
     if (is.null(cex.text)) {
@@ -765,13 +906,13 @@ addGTS <- function(age, xleft = NULL, xright = NULL, frac = 0.05,
     }
 
     ## this subfunction plots one gts bar
-    plotGTS <- function(xleft, xright, gts, ad, td = T, cex.t, textpos = NULL) {
+    PlotGTS <- function(xleft, xright, gts, ad, td = T, cex.t, textpos = NULL) {
         ## add rectangles with appropriate colour
         rect(if (ad == "h") gts$start else xleft,
              if (ad == "h") xleft else gts$start,
              if (ad == "h") gts$end else xright,
              if (ad == "h") xright else gts$end,
-             col = gts$hex, border = darker(gts$hex))
+             col = gts$hex, border = Darken(gts$hex))
         ## add name in centre
         ## TODO: if the centre is outside of the plot margins, add it to
         ## the closest plot area
@@ -788,27 +929,37 @@ addGTS <- function(age, xleft = NULL, xright = NULL, frac = 0.05,
     ## loop over type, so one loop is one bar of age info
     for (bar in seq_len(nbars)) {
         xright <- xleft + relwidth[bar] * totwidth
-        plotGTS(xleft, xright,
+        PlotGTS(xleft, xright,
                 if (types[bar] != "Chron") GTS[GTS$type == types[bar], ]
                 else Chron,
-                ad = age.dir, td = hort[bar], cex.t = cex.text[bar],
+                ad = age.dir, td = horizontal.text[bar], cex.t = cex.text[bar],
                 textpos = if (types[bar] != "Chron") NULL else NULL)
                 ## TODO: fix text position for chron to right of xright with pos = 4.
         xleft <- xright
     }
 }
 
-## TODO: create addChron function that does the same as addGTS but with
+## TODO: create addChron function that does the same as AddGTS but with
 ## normal/reversed magnetostrat + names
 
-darker <- function(color = col, factor=1.4){
+Darken <- function(color = col, factor=1.4){
+    ## darken a colour
+    ## Args:
+    ##  color: the colour input
+    ## factor: the factor by which to darken
+    ## Returns: the darkened colour
     col <- col2rgb(color)
     col <- col/factor
     col <- rgb(t(col), maxColorValue=255)
     col
 }
 
-lighter <- function(color = col, factor=1.4){
+Lighten <- function(color = col, factor=1.4){
+    ## lighten a colour
+    ## Args:
+    ##  color: the colour input
+    ## factor: the factor by which to lighten
+    ## Returns: the lightened colour
     col <- col2rgb(color)
     col <- col*factor
     col <- rgb(t(as.matrix(apply(col, 1, function(x) if (x > 255) 255 else x))), maxColorValue=255)
