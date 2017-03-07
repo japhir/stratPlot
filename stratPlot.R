@@ -4,32 +4,11 @@
 ## First version: 2014-04-11
 ## Latest version: 2016-10-26
 
-library(astrochron)
-
-## test code
-## age <- c(0.1,  0.2, 0.3, 0.5, 0.8,     4,    13,    20,      40,      80, 120)
-## var <- c(1,    4,   5, 1e2, 4e2,  1e3, 5, 1e5, 20,  1e5, 5e6)
-## err <- 0.5#c(1.5, 10,  10,  40, 100,   100, 30000, 90000,     1e5,     5e5, 9e5)
-## ## postscript(encoding = "WinAnsi.enc")
-## stratPlot(age, var,
-##           ylab = pCO[2]~(ppmv)~(degree*C)~H[2]*O~TEX[86]^H~PVDB~("\u2030"),
-##           xlab = "Age (Ma)", 
-##           ylim = c(1e-1, 1e7),
-## 	  pol = T, polcol = "#EEEEEE66", pol0 = 1e-1,
-##           bar = T, barcol = "green",
-## 	  error = err, errorcol = "red", #errortype = "region",         
-## 	  abc = "A", abcadj = -3,
-## 	  xax = c(1, 3), xntck = 5, xaxs = "i",
-##           ## gapsize = 20,
-##           log = "y", mar = "auto")
-## addGTS(xleft = 3e-2, 5e-1, hort = c(T, T, T, T, T, F))
-## addAxlab("hoi", 3, ang = 45, adj = 0, y = 1e8)
-
-## stratPlot(data.frame(var0 = c(1, 4, 5, 100, 400, 1000, 50000, 90000, 1000000, 1000000),
-##                      age = seq(100, 1000, length.out = 10),  # automatically extracts age column
-##                      var1 = rnorm(10, 40)),
-##           log = c("y", ""),
-##           pol = c(T, F))
+library(astrochron)  # for tuning stratigraphic series
+library(png)         # for working with png images
+library(jpeg)        # for working with jpg images
+library(rasterImage) # for transposing images, might not work w/ Windows!
+library(raster)      # for working with raster images
 
 stratPlot <- function(var, ...){
     UseMethod("stratPlot", var)
@@ -38,7 +17,7 @@ stratPlot <- function(var, ...){
 ## Creates a plot based on a depth/age vector and a variable vector
 stratPlot.default <- function(age, var, 
                               ## direction of age "v", "ver", "vertical" or "h" "hor" "horizontal"
-                              agedir = "h",
+                              age.dir = "h",
                               ## GTS colour scale on age axis
                               GTS = F, Era = F, Period = T, Epoch = T, Age = F, GTSfrac = .05,
                               ## polygon to plot
@@ -58,7 +37,7 @@ stratPlot.default <- function(age, var,
                               ##  TODO: add standard Geologic Time Scale to region near x or y axis
                               ...,  # other graphical parameters
                               ## default positions of axes (1:4)
-                              xax = if (agedir == "h") 1 else 3, yax = 2,
+                              xax = if (age.dir == "h") 1 else 3, yax = 2,
                               xlim = NULL, ylim = NULL, 
                               xlab = NULL, ylab = NULL,
                               xlabline = 2, ylabline = 2, 
@@ -91,11 +70,11 @@ stratPlot.default <- function(age, var,
         var <- df$var
     }
     
-    ## check agedir
-    if (!agedir %in% c("v", "ver", "vertical", "h", "hor", "horizontal")) {
-        stop("agedir must be either 'v', 'ver', 'vertical' or 'h', 'hor, 'horizontal'")
+    ## check age.dir
+    if (!age.dir %in% c("v", "ver", "vertical", "h", "hor", "horizontal")) {
+        stop("age.dir must be either 'v', 'ver', 'vertical' or 'h', 'hor, 'horizontal'")
     } else {
-        agedir <- substr(agedir, 1, 1) # agedir is converted to either 'v' or 'h'
+        age.dir <- substr(age.dir, 1, 1) # age.dir is converted to either 'v' or 'h'
     }
     
     if (!add) {
@@ -110,7 +89,7 @@ stratPlot.default <- function(age, var,
         }
 
         ##  xlim, ylim
-        if (agedir == "h") {
+        if (age.dir == "h") {
             if (is.null(xlim)) xlim <- range(age, na.rm = TRUE)
             if (is.null(ylim)) ylim <- range(var, na.rm = TRUE)
         } else {
@@ -119,7 +98,7 @@ stratPlot.default <- function(age, var,
         }
     
         ##  default xlab, ylab
-        if (agedir == "h") {
+        if (age.dir == "h") {
             if (is.null(xlab)) {
                 if (max(age, na.rm = T) < 100) {
                     if (verbose) message("Assuming age is given in Ma")
@@ -162,8 +141,8 @@ stratPlot.default <- function(age, var,
         ## baseline to draw polygon and bar to
         if (is.null(pol0)) {
             ## logarithmic var axis -> draw polygon to minimum value
-            if ((agedir == "h" && grepl("y", log)) ||
-                (agedir == "v" && grepl("x", log))) {
+            if ((age.dir == "h" && grepl("y", log)) ||
+                (age.dir == "v" && grepl("x", log))) {
                 pol0 <- min(var)
             } else  {
                 pol0 <- 0
@@ -198,14 +177,14 @@ stratPlot.default <- function(age, var,
             x <- c(age[1], age, tail(age, n = 1))
             y <- c(pol0, var, pol0)
         }
-        polygon(x = if (agedir == "h") x else y, y = if (agedir == "h") y else x,
+        polygon(x = if (age.dir == "h") x else y, y = if (age.dir == "h") y else x,
                 col = polcol, border = border) 
     }
 
     ## plot exaggeration
     if (!is.null(exaggerate)) {
-        points(if (agedir == "h") age else var * exaggerate,
-               if (agedir == "h") var * exaggerate else age,
+        points(if (age.dir == "h") age else var * exaggerate,
+               if (age.dir == "h") var * exaggerate else age,
                type = extype, lty = exlty, col = excol) 
     }
     
@@ -219,11 +198,11 @@ stratPlot.default <- function(age, var,
         }
         if("bars" %in% errortype) {
             errorBarsPlot(age, var, error, col = errorcol, code = errorcode,
-                          agedir = agedir, lwd = errorlwd)
+                          age.dir = age.dir, lwd = errorlwd)
         }
         if ("area" %in% errortype) {
             errorAreaPlot(age, var, error, col = errorcol,
-                          agedir = agedir)
+                          age.dir = age.dir)
         }
         ## }
     }
@@ -231,16 +210,16 @@ stratPlot.default <- function(age, var,
     ##  plot bars (added after errors to overlap the possible areas)
     if (bar) {
         if (is.null(pol0)) pol0 <- 0
-        segments(x0 = if (agedir == "h") age else rep(pol0, length(var)),
-                 y0 = if (agedir == "h") rep(pol0, length(var)) else age,
-                 x1 = if (agedir == "h") age else var,
-                 y1 = if (agedir == "h") var else age,
+        segments(x0 = if (age.dir == "h") age else rep(pol0, length(var)),
+                 y0 = if (age.dir == "h") rep(pol0, length(var)) else age,
+                 x1 = if (age.dir == "h") age else var,
+                 y1 = if (age.dir == "h") var else age,
                  col = barcol, lwd = barlwd)
     }
     
     ##  plot the actual record
-    points(x = if (agedir == "h") age else var,
-           y = if (agedir == "h") var else age, type = type,
+    points(x = if (age.dir == "h") age else var,
+           y = if (age.dir == "h") var else age, type = type,
            pch = pch, lty = lty, ...)
 
     ## add axes
@@ -257,7 +236,7 @@ stratPlot.default <- function(age, var,
                      ang = ylabang, labadj = ylabalign, cex = ylabcex)
         }
         if (GTS) {
-            addGTS(agedir = agedir, Era = F, Period = T, Epoch = T, Age = F, frac = GTSfrac)
+            addGTS(age.dir = age.dir, Era = F, Period = T, Epoch = T, Age = F, frac = GTSfrac)
         }
     }
     
@@ -273,25 +252,25 @@ errorBarsPlot <- function(age, var = NULL, error,  # onesided if single vector!
                           width = diff(range(age)) / 100,
                           col = "#BEBEBEE6", code = 3,
                           lwd = 1,
-                          agedir = "h") {
+                          age.dir = "h") {
     if (is.data.frame(error) || is.matrix(error) && ncol(error) == 2) {
         if (!(nrow(error) == 1 || nrow(error) == length(var)))
             warning("Number of rows in error not equal to var length, recycling")
-        if (agedir == "h")
+        if (age.dir == "h")
             arrows(age, error[, 1], age, error[,2], col = col, length = 0.05,
                    angle = 90, code = code, lwd = lwd)
-        else if (agedir == "v")
+        else if (age.dir == "v")
             arrows(error[, 1], age, error[, 2], age, col = col, length = 0.05,
                    angle = 90, code = code, lwd = lwd)
     } else {
         if (!(length(error) == length(var) || length(error) == 1))
             warning("Length of error not equal to var length, recycling")
-        if (agedir == "h") {
+        if (age.dir == "h") {
             arrows(x0 = age, y0 = var - error, x1 = age,
                    y1 = var + error, col = col, length = 0.05,
                    angle = 90, code = code, lwd = lwd)
         }
-        else if (agedir == "v") {
+        else if (age.dir == "v") {
             arrows(x0 = var - error, y0 = age, x1 = var + error,
                    y1 = age, col = col, length = 0.05, angle = 90,
                    code = code, lwd = lwd)
@@ -300,7 +279,7 @@ errorBarsPlot <- function(age, var = NULL, error,  # onesided if single vector!
 }
 
 errorAreaPlot <- function(age, var = NULL, error, 
-                          col = "#BEBEBE4D", agedir = "h") {
+                          col = "#BEBEBE4D", age.dir = "h") {
     if (!is.numeric(error) && is.null(var))
         stop("Provide either dataframe/matrix of low and high error values or vector of relative error values.")
     ##  error is a dataframe/matrix with 2 columns for negative and positive
@@ -333,21 +312,21 @@ errorAreaPlot <- function(age, var = NULL, error,
             y <- c(var - error, rev(var + error))
         }
     }
-    polygon(x = if (agedir == "h") x else y, y = if (agedir == "h") y else x,
+    polygon(x = if (age.dir == "h") x else y, y = if (age.dir == "h") y else x,
             col = col, border = NA)
 }
 
 ##  Takes a dataframe of one or multiple variable(s) to  create a (set of) plot(s)
 stratPlot.data.frame <- function(var, # dataframe
                                  age = NULL, # optional vector 
-                                 agedir = "h",  # "v", "ver", "vertical" or "h" "hor" "horizontal" 
+                                 age.dir = "h",  # "v", "ver", "vertical" or "h" "hor" "horizontal" 
                                  pol = F, bar = F,        # polygon/bar
                                  gapsize = NULL,  # lines not drawn for timesteps > gapsize
                                  oneplot = F, # logical, if TRUE plot all variables in the same plot
                                  genframe = T, # show plots in same window
                                  add = F, error = NULL,    # vector of errors to plot (note: relative values!)
                                  stacked = F, # logical, calculate cumulative sum for vars, currently doesn't work.
-                                 ..., xax = if (agedir == "h") 1 else 3, # default position of x-axis
+                                 ..., xax = if (age.dir == "h") 1 else 3, # default position of x-axis
                                  log = "",
                                  yax = 2,         # default position of yaxis
                                  las = 1,         # default direction of axis labels
@@ -384,9 +363,9 @@ stratPlot.data.frame <- function(var, # dataframe
             var <- var[, -depthcol[1]]
 
             ##  overwrite agelab if default
-            if (agedir == "h") {
+            if (age.dir == "h") {
                 if (is.null(xlab)) xlab <- "Depth (mbsf)"
-            } else if (agedir == "v") {
+            } else if (age.dir == "v") {
                 if (is.null(ylab)) ylab <- "Depth (mbsf)"
             }
         ## agecol found but depthcol isn't
@@ -414,7 +393,7 @@ stratPlot.data.frame <- function(var, # dataframe
     if (is.vector(var)) nvar <- 1 else nvar <- ncol(var)
 
     ##  parsing of x- and ylab 
-    if (agedir == "h") {
+    if (age.dir == "h") {
         if (!is.null(ylab)) {
             ## TODO: parse ylab in similar manner as xlab, with proper expression check
             if (is.character(ylab) && length(ylab) > 1 && length(ylab) != nvar){ 
@@ -434,7 +413,7 @@ stratPlot.data.frame <- function(var, # dataframe
         if (length(ylab) > 1 && length(ylab) == nvar) {
             ylabs <- ylab
         }
-    } else { # agedir = v
+    } else { # age.dir = v
         if (!is.null(xlab)) {
             if(length(xlab) > 1 && length(xlab) != nvar){ 
                 stop("Incorrect length of xlab")
@@ -531,7 +510,7 @@ stratPlot.data.frame <- function(var, # dataframe
     ##  set up the plotting region
     ##  last is to check if it wasn't a df with only 2 columns
     if (!oneplot && genframe && is.data.frame(var)) {  
-        if (agedir == "h") {
+        if (age.dir == "h") {
             par(mfrow = c(nvar, 1))
         } else {
             par(mfrow = c(1, nvar))
@@ -546,7 +525,7 @@ stratPlot.data.frame <- function(var, # dataframe
                       if (i == 1) var[, 1]
                       else rowSums(var[, 1:i])
                   } else { var[, i] },
-                  age = age, agedir = agedir, gapsize = gapsize,
+                  age = age, age.dir = age.dir, gapsize = gapsize,
                   pol = if (exists("pols")) pols[i] else pol,
                   ## pol = pol[i],
                   bar = if (exists("bars")) bars[i] else bar,
@@ -716,7 +695,7 @@ addABC <- function(char = "A", xadj = 0.04 * abs(diff(par("usr")[1:2])),
 }
 
 addGTS <- function(age, xleft = NULL, xright = NULL, frac = 0.05,
-                   agelim = range(age), agedir = "h",
+                   agelim = range(age), age.dir = "h",
                    type = NULL,
                    Eon = T, Era = T, Period = T, Epoch = T, Age = T,
                    Chron = T,
@@ -752,7 +731,7 @@ addGTS <- function(age, xleft = NULL, xright = NULL, frac = 0.05,
 
     ## default xleft/xright
     if (is.null(xleft)) {
-        if (agedir == "h") {
+        if (age.dir == "h") {
             xleft  <- par("usr")[3]
         } else {
             xleft <- par("usr")[1]
@@ -760,7 +739,7 @@ addGTS <- function(age, xleft = NULL, xright = NULL, frac = 0.05,
     }
     if (verbose) cat(" from ", xleft)
     if (is.null(xright)) {
-        if (agedir == "h") {
+        if (age.dir == "h") {
             fullright <- par("usr")[4]
         } else {
             fullright <- par("usr")[2]
@@ -777,7 +756,7 @@ addGTS <- function(age, xleft = NULL, xright = NULL, frac = 0.05,
     }
 
     if (is.null(hort)) {
-        if (agedir == "h") hort <- c(F, F, F, F, F, F)[type]
+        if (age.dir == "h") hort <- c(F, F, F, F, F, F)[type]
         else hort <- c(F, F, F, T, T, T)[type]
     }
 
@@ -812,7 +791,7 @@ addGTS <- function(age, xleft = NULL, xright = NULL, frac = 0.05,
         plotGTS(xleft, xright,
                 if (types[bar] != "Chron") GTS[GTS$type == types[bar], ]
                 else Chron,
-                ad = agedir, td = hort[bar], cex.t = cex.text[bar],
+                ad = age.dir, td = hort[bar], cex.t = cex.text[bar],
                 textpos = if (types[bar] != "Chron") NULL else NULL)
                 ## TODO: fix text position for chron to right of xright with pos = 4.
         xleft <- xright
@@ -1059,75 +1038,151 @@ ReadCoreInfo <- function(data, # "coreholesum.csv",
     return(ah)
 }
 
-## TODO: make this more general w/ regex for cor and sc
-ReadPhotos <- function(cores = integer(), sections = integer(), 
-                       directory = "data/section_images/",
-                       pattern = ".png|.jpg") {
+ReadPhotoFiles <- function(directory,
+                           core.regex = ".*D([0-9]+)R-.*",
+                           section.regex = ".*D[0-9]+R-([0-9]+|CC(\\([0-9]\\))*).*",
+                           core.info = NULL,
+                           pattern = ".png") {  # or ".jpg"
     ## read png images with names such as 959D20R-1.png in specified directory
     corepics <- data.frame(list.files(directory, pattern = pattern), 
                            stringsAsFactors = FALSE)
     names(corepics)[1] <- "files"
     # get core and section information from filename
-    corepics$Cor <- as.integer(substr(corepics$files, 5, 6))
-    corepics$Sc  <- as.factor(sapply(strsplit(sub(pattern, "", 
-                                                  corepics$files), "-"), "[[", 2))
-    # subset cores and sections of interest
-    corepics <- SubsetCores(corepics, cores, sections, 
-                            core.name = "Cor", section.name = "Sc")
+    corepics$Cor <- as.integer(sub(core.regex, "\\1", corepics$files))
+    corepics$Sc  <- as.factor(sub(section.regex, "\\1", corepics$files))    
+    ## subset cores and sections of interest
+    if (!is.null(core.info)) {
+        ## merge w/ data frame with core info based on Sc and Cor
+        corepics <- merge(corepics, core.info)
+    }
     return(corepics)
 }
 
-## TODO: make this more general
-LoadPhotos <- function(cores = integer(), sections = integer(), 
-                       filenames = ReadPhotos(cores, sections)$files, 
-                       dir = "data/core_photos/section_images") {
+LoadPhotos <- function(filenames, dir) {
+    ## note that this assumes that all files are either .jpeg or .png!
+    filetype <- sub(".*(\\.[a-zA-Z]+)$", "\\1", filenames[1])
     imgs <- lapply(seq_along(filenames), function(i) {
-        as.raster(readPNG(paste(dir, filenames[i], sep = "/")))
+        as.raster(
+            if (grepl(filetype, ".png|.PNG")) {
+                readPNG(paste(dir, filenames[i], sep = "/"))
+            } else if (grepl(filetype, ".jpg|.JPG|.JPEG|.jpeg")) {
+                readJPEG(paste(dir, filenames[i], sep = "/"))
+            })
     })
     names(imgs) <- filenames
     return(imgs)
 }
 
 ## TODO: make this more general
-PlotCoreRange <- function(xleft, xright, 
-                          cores = integer(), 
-                          sections = integer(), 
-                          col = "lightblue",
-                          ah  = ReadCores(cores),
-                          ahs = ReadSections(cores, sections),
-                          add = TRUE, labels = TRUE, border = darker(col),
-                          agedir = "v", 
-                          cex = 1, ytype = "depth", ...) {
-    if (!add) { PlotBlank(xleft, xright, cores, sections, ah = ah, ytype = ytype)}
-    # plot core and section boxes at specified x-position
-    if (agedir == "v") {
+PlotRecovery <- function(core.info, xleft = NULL, xright = NULL, frac = 0.05, 
+                         core.column = "Cor", col = "lightblue",
+                         labels = TRUE, border.col = darker(col),
+                         age.dir = "h", ytype = "depth", cex.text = 1, ...) {
+    ## default values for xleft, xright
+    if (is.null(xleft)) {
+        if (age.dir == "v")
+            xleft <- par("usr")[1]
+        else if (age.dir == "h")
+            xleft <- par("usr")[3]
+    }
+    if (is.null(xright)) {
+        if (age.dir == "v") 
+            xright <- xleft + (par("usr")[2] - xleft) * frac
+        if (age.dir == "h")
+            xright <- xleft + (par("usr")[4] - xleft) * frac
+    }
+   
+    # plot boxes
+    if (age.dir == "v") {
         if (ytype == "depth") {
-            rect(xleft, ah$Bot.mbsf, xright, ah$Top.mbsf., col = col, border = border, ...)
+            rect(xleft, core.info$Bot.mbsf, xright, core.info$Top.mbsf.,
+                 col = col, border = border.col, ...)
             if (labels) {  
-                text(mean(c(xleft, xright)), (ah$Top.mbsf. + ah$Bot.mbsf) / 2, ah$Cor, 
-                     cex = cex)#, srt = 90)
+                text(x = mean(c(xleft, xright)),
+                     y = (core.info$Top.mbsf. + core.info$Bot.mbsf) / 2,
+                     labels = core.info[, core.column], 
+                     cex = cex.text)#, srt = 90)
             }
         } else if (ytype == "age") {
-            rect(xleft, ah$Bot.age, xright, ah$Top.age, col = col, border = border, ...)
+            rect(xleft, core.info$Bot.age, xright, core.info$Top.age,
+                 col = col, border = border.col, ...)
             if (labels) {
-                text(mean(c(xleft, xright)), (ah$Top.age + ah$Bot.age) / 2, ah$Cor,
-                     cex = cex)#, srt = 90)
+                text(x = mean(c(xleft, xright)),
+                     y = (core.info$Top.age + core.info$Bot.age) / 2,
+                     labels = core.info[, core.column],
+                     cex = cex.text)#, srt = 90)
             }
         }
-    } else if (agedir == "h") {
+    } else if (age.dir == "h") {
         if (ytype == "depth") {
-            rect(ah$Bot.mbsf, xleft, ah$Top.mbsf., xright, col = col, border = border, ...)
+            rect(core.info$Bot.mbsf, xleft, core.info$Top.mbsf., xright,
+                 col = col, border = border.col, ...)
             if (labels) {  
-                text((ah$Top.mbsf. + ah$Bot.mbsf) / 2, mean(c(xleft, xright)), ah$Cor, 
-                     cex = cex)#, srt = 90)
+                text(x = (core.info$Top.mbsf. + core.info$Bot.mbsf) / 2,
+                     y = mean(c(xleft, xright)), core.info[, core.column], 
+                     cex = cex.text)#, srt = 90)
             }
         } else if (ytype == "age") {
-            rect(ah$Bot.age, xleft, ah$Top.age, xright, col = col, border = border, ...)
+            rect(core.info$Bot.age, xleft, core.info$Top.age, xright,
+                 col = col, border = border.col, ...)
             if (labels) {
-                text((ah$Top.age + ah$Bot.age) / 2, mean(c(xleft, xright)), ah$Cor,
-                     cex = cex)#, srt = 90)
+                text(x = (core.info$Top.age + core.info$Bot.age) / 2,
+                     y = mean(c(xleft, xright)), core.info[, core.column],
+                     cex = cex.text)#, srt = 90)
             }
         }
     }
 }
 
+PlotPhotos <- function(images, top, bot, xleft = NULL, xright = NULL,
+                       frac = 0.05,
+                       age.dir = "h", ytype = "depth",  # depth or age?
+                       labels = FALSE, ...) {
+    ## default values for xleft, xright
+    if (is.null(xleft)) {
+        if (age.dir == "v")
+            xleft <- par("usr")[1]
+        else if (age.dir == "h")
+            xleft <- par("usr")[3]
+    }
+    if (is.null(xright)) {
+        if (age.dir == "v") 
+            xright <- xleft + (par("usr")[2] - xleft) * frac
+        if (age.dir == "h")
+            xright <- xleft + (par("usr")[4] - xleft) * frac
+    }
+
+    # plot the requested cores between x-axis positions left and right
+    if (age.dir == "v") {
+        lapply(seq_along(images), function(i) {
+            rasterImage(images[[i]], xleft, bot[i], xright, top[i], interpolate = FALSE)
+        })
+    } else if (age.dir == "h") {
+        lapply(seq_along(images), function(i) {
+            img <- t(flip(images[[i]], 2))
+            rasterImage(img, top[i], xleft, bot[i], xright, interpolate = FALSE)
+        })
+    }
+    if (labels) {
+        text(mean(c(xleft, xright)), (bot + top) / 2, names(images),
+             col = "lightblue", ...)
+    }
+}
+
+
+## TODO: figure out a way to parametrise this so it doesn't need to happen in every function
+CalcAddParms <- function(xleft = NULL, xright = NULL, frac = 0.05, age.dir = "h") {
+## default values for xleft, xright
+    if (is.null(xleft)) {
+        if (age.dir == "v")
+            xleft <- par("usr")[1]
+        else if (age.dir == "h")
+            xleft <- par("usr")[3]
+    }
+    if (is.null(xright)) {
+        if (age.dir == "v") 
+            xright <- xleft + (par("usr")[2] - xleft) * frac
+        if (age.dir == "h")
+            xright <- xleft + (par("usr")[4] - xleft) * frac
+    }
+}
