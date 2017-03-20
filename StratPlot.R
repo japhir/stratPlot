@@ -1190,6 +1190,7 @@ ReadCoreInfo <- function(data, # "coreholesum.csv",
 }
 
 ReadPhotoFiles <- function(directory,
+                           hole.regex = ".*([A-Za-z])[0-9]+R-.*",
                            core.regex = ".*D([0-9]+)R-.*",
                            section.regex = ".*D[0-9]+R-([0-9]+|CC(\\([0-9]\\))*).*",
                            core.info = NULL,
@@ -1199,6 +1200,7 @@ ReadPhotoFiles <- function(directory,
                            stringsAsFactors = FALSE)
     names(corepics)[1] <- "files"
     # get core and section information from filename
+    corepics$H <- as.factor(sub(hole.regex, "\\1", corepics$files))
     corepics$Cor <- as.integer(sub(core.regex, "\\1", corepics$files))
     corepics$Sc  <- as.factor(sub(section.regex, "\\1", corepics$files))    
     ## subset cores and sections of interest
