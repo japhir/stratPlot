@@ -14,6 +14,87 @@ library(jpeg)        # for working with jpg images
 library(rasterImage) # for transposing images, might not work w/ Windows!
 library(raster)      # for working with raster images
 
+Plot <- function(var, ...) {
+    UseMethod("Plot", var)
+}
+
+## An improved plot method that allows automatic margin setup based on prettier
+## (log) axes, with the option to add polygons and bars to better illustrate
+## sample position. It also allows for errorbars and errorregions in both
+## directions.
+Plot.default <- function(x, y = NULL, add = FALSE,  # new plot or add to plot?
+                         xax = 1, yax = 2, xlim = NULL, ylim = NULL,
+                         mar = "auto", # plot margins
+                         type = "o", pch = 16, lty = 1,
+                         hor.pol0 = 0, hor.pol = FALSE,
+                         hor.pol.col = "#4682B4E6", hor.pol.border = NA,
+                         ver.pol0 = 0, ver.pol = FALSE,
+                         ver.pol.col = "#4682B4E6", ver.pol.border = NA,
+                         hor.error = NULL, hor.error.bars = TRUE,
+                         hor.error.col = "#BEBEBEE6", hor.error.code = 3,
+                         ver.error = NULL, ver.error.bars = TRUE,
+                         ver.error.col = "#BEBEBEE6", ver.error.code = 3,
+                         hor.bar = FALSE, bty = "n", log = "", ...) {
+    if (!add) {
+        ##  mar (depends on xax and yax, which are not checked)
+        if (identical(mar, "auto")) {
+            mar <- c(if (1 %in% xax || 1 %in% yax) 5 else 2,
+                     if (2 %in% xax || 2 %in% yax) 5 else 2,
+                     if (3 %in% xax || 3 %in% yax) 5 else 2,
+                     if (4 %in% xax || 4 %in% yax) 5 else 2) + .1
+        } else if (identical(mar, "inherit")) {
+            mar <- par(no.readonly = TRUE)$mar
+        }
+        
+        ##  xlim, ylim
+        if (is.null(xlim)) xlim <- range(x, na.rm = TRUE)
+        if (is.null(ylim)) ylim <- range(y, na.rm = TRUE)
+        
+        ##  set up plotting margins
+        par(mar = mar, bty = bty)
+        
+        ##  set up empty plot
+        plot(1, type = "n", xlim = xlim, ylim = ylim, log = log,
+             xlab = "", ylab = "", axes = FALSE, ...)
+        ## axes added later
+     }
+    
+    ## add polygon between axis and data
+    if (hor.pol) {
+        PlotPolygon(x, y, hor = TRUE, pol0 = hor.pol0, col = hor.pol.col, border = hor.pol.border)
+    }
+    if (ver.pol) {
+        PlotPolygon(x, y, hor = FALSE, pol0 = ver.pol0, col = ver.pol.col, border = ver.pol.border)
+    }
+
+    ## add data exaggeration lines
+    # TODO
+
+    ## error bars
+    if (!is.null(hor.error)) {
+        if (hor.error.bars) {
+            ErrorBarsPlot(x, y, hor.error, col = hor.error.col, code = hor.error.code)
+        } else {
+            ErrorBarsPlot(x, y, ver.error, col = ver.error.col, code = ver.error.code, age.dir = "v")
+        }
+    }
+    
+
+    ## error area
+
+    ## bars between axis and data   
+
+
+    ## plot the record
+    points(x, y, type = type, pch = pch, lty = lty, ...)
+
+    ## add axes
+
+    ## add GTS?
+
+    ## add corner ABC
+}
+
 StratPlot <- function(var, ...){
     ## S3-method for the main plotting function
     ## Args:
@@ -146,6 +227,10 @@ StratPlot.default <- function(age, var, age.dir = "h", GTS = F,
     }
     
     if (!add) {
+        ## set up a new plot
+
+
+        ### TODO: this should all be done by Plot()
         ##  mar (depends on xax and yax, which are not checked)
         if (identical(mar, "auto")) {
             mar <- c(if (1 %in% xax || 1 %in% yax) 5 else 2,
@@ -165,6 +250,7 @@ StratPlot.default <- function(age, var, age.dir = "h", GTS = F,
             if (is.null(ylim)) ylim <- rev(range(age, na.rm = TRUE))
         }
     
+        ### TODO: this should be kept here
         ##  default xlab, ylab
         if (age.dir == "h") {
             if (is.null(xlab)) {
@@ -402,6 +488,47 @@ ErrorAreaPlot <- function(age, var = NULL, error, col = "#BEBEBE4D",
     }
     polygon(x = if (age.dir == "h") x else y, y = if (age.dir == "h") y else x,
             col = col, border = NA, ...)
+}
+
+PlotPolygon <- function(x, y, hor = TRUE, pol0 = 0, col = "gray", border = NA,
+                        verbose = TRUE, ...) {
+    if (anyNA(x) || anyNA(y)) {
+        if (verbose) message("NAs found in x and/or y, currently ignoring")
+        nona <- data.frame(x = x, y = y)
+        nona <- nona[complete.cases(nona), ]
+        if (hor) {
+            pol.x <- c(nona$x[1], nona$x, tail(nona$x, n = 1))
+            pol.y <- c(pol0, nona$y, pol0)
+        } else {
+            pol.x <- c(pol0, nona$x, pol0)
+            pol.y <- c(nona$y[1], nona$y, tail(nona$y, n = 1))
+        }
+        ##  TODO: create polygons per non-NA region, like we do with errorregion
+        ##  enc <- rle(!is.na(var))
+        ##  endIdxs <- cumsum(enc$lengths)
+        ##  for (i in 1:length(enc$lengths)) {
+        ##    if (enc$values[i]) {
+        ##      endIdx <- endIdxs[i]
+        ##      startIdx <- endIdx - enc$lengths[i] + 1
+        ##      subvar <- var[startIdx:endIdx]
+        ##      subage <- age[startIdx:endIdx]
+        ##      x <- c(left, subvar, left)
+        ##      y <- c(subage[1], age, tail(age, n = 1))
+        ##    }
+        ##  }
+    } else {
+        ##  not sure if I want to use the current left or use:
+        ##  min(var, na.rm = TRUE) - .04 * diff(range(var, na.rm = TRUE))
+        if (hor) {
+            pol.x <- c(x[1], x, tail(x, n = 1))
+            pol.y <- c(pol0, y, pol0)
+        }
+        else {
+            pol.x <- c(pol0, x, pol0)
+            pol.y <- c(y[1], y, tail(y, n = 1))
+        }
+    }
+    polygon(pol.x, pol.y, col = col, border = border, ...) 
 }
 
 StratPlot.data.frame <- function(var, # dataframe
@@ -1213,6 +1340,7 @@ ReadPhotoFiles <- function(directory,
 
 LoadPhotos <- function(filenames, dir) {
     ## note that this assumes that all files are either .jpeg or .png!
+    ## please make sure that the pictures are not too big for your memory!
     filetype <- sub(".*(\\.[a-zA-Z]+)$", "\\1", filenames[1])
     imgs <- lapply(seq_along(filenames), function(i) {
         as.raster(
@@ -1311,6 +1439,7 @@ PlotPhotos <- function(images, top, bot, xleft = NULL, xright = NULL,
             rasterImage(images[[i]], xleft, bot[i], xright, top[i], interpolate = FALSE)
         })
     } else if (age.dir == "h") {
+        ## TODO: this currently fails!
         lapply(seq_along(images), function(i) {
             img <- t(flip(images[[i]], 2))
             rasterImage(img, top[i], xleft, bot[i], xright, interpolate = FALSE)
@@ -1321,7 +1450,6 @@ PlotPhotos <- function(images, top, bot, xleft = NULL, xright = NULL,
              col = "lightblue", ...)
     }
 }
-
 
 ## TODO: figure out a way to parametrise this so it doesn't need to happen in every function
 CalcAddParms <- function(xleft = NULL, xright = NULL, frac = 0.05, age.dir = "h") {
