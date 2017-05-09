@@ -23,18 +23,38 @@ Plot <- function(var, ...) {
 ## sample position. It also allows for errorbars and errorregions in both
 ## directions.
 Plot.default <- function(x, y = NULL, add = FALSE,  # new plot or add to plot?
+                         xlab = NULL, ylab = NULL,
+                         ## position of x- and y-axis
                          xax = 1, yax = 2, xlim = NULL, ylim = NULL,
+                         ## number of minor ticks between major ticks
+                         xntck = 2, yntck = 2,
                          mar = "auto", # plot margins
-                         type = "o", pch = 16, lty = 1,
-                         hor.pol0 = 0, hor.pol = FALSE,
+                         ## default graphical parameters
+                         type = "o", pch = 16, lty = 1, las = 1, bty = "n", log = "", 
+                         ## xaxis parameters
+                         xax.labs = NULL, xlab.ang = 0, xlab.adj = NA,
+                         xlab.line = 2, xlab.align = c(0.5, NA), xlab.cex = 1,
+                         xlab.font = 1,
+                         ## yaxis parameters
+                         yax.labs = NULL, ylab.ang = 0, ylab.adj = NA,
+                         ylab.line = 2, ylab.align = c(0.5, NA), ylab.cex = 1,
+                         ylab.font = 1,
+                         ## polygon parameters
+                         hor.pol0 = 1e-100, hor.pol = FALSE,
                          hor.pol.col = "#4682B4E6", hor.pol.border = NA,
-                         ver.pol0 = 0, ver.pol = FALSE,
+                         ver.pol0 = 1e-100, ver.pol = FALSE,
                          ver.pol.col = "#4682B4E6", ver.pol.border = NA,
-                         hor.error = NULL, hor.error.bars = TRUE,
+                         ## bar parameters
+                         hor.bar = FALSE, hor.bar.col = "orange", hor.bar.lwd = 2,
+                         ver.bar = FALSE, ver.bar.col = "orange", ver.bar.lwd = 2,
+                         ## error bars
+                         hor.error = NULL,
+                         ## logical: bars, false = polygon
+                         hor.error.bars = TRUE, 
                          hor.error.col = "#BEBEBEE6", hor.error.code = 3,
                          ver.error = NULL, ver.error.bars = TRUE,
                          ver.error.col = "#BEBEBEE6", ver.error.code = 3,
-                         hor.bar = FALSE, bty = "n", log = "", ...) {
+                         verbose = TRUE, ...) {
     if (!add) {
         ##  mar (depends on xax and yax, which are not checked)
         if (identical(mar, "auto")) {
@@ -57,14 +77,16 @@ Plot.default <- function(x, y = NULL, add = FALSE,  # new plot or add to plot?
         plot(1, type = "n", xlim = xlim, ylim = ylim, log = log,
              xlab = "", ylab = "", axes = FALSE, ...)
         ## axes added later
-     }
+    }
     
     ## add polygon between axis and data
     if (hor.pol) {
-        PlotPolygon(x, y, hor = TRUE, pol0 = hor.pol0, col = hor.pol.col, border = hor.pol.border)
+        PlotPolygon(x, y, hor = TRUE, pol0 = hor.pol0, col = hor.pol.col,
+                    border = hor.pol.border)
     }
     if (ver.pol) {
-        PlotPolygon(x, y, hor = FALSE, pol0 = ver.pol0, col = ver.pol.col, border = ver.pol.border)
+        PlotPolygon(x, y, hor = FALSE, pol0 = ver.pol0, col = ver.pol.col,
+                    border = ver.pol.border)
     }
 
     ## add data exaggeration lines
@@ -73,24 +95,47 @@ Plot.default <- function(x, y = NULL, add = FALSE,  # new plot or add to plot?
     ## error bars
     if (!is.null(hor.error)) {
         if (hor.error.bars) {
-            ErrorBarsPlot(x, y, hor.error, col = hor.error.col, code = hor.error.code)
-        } else {
-            ErrorBarsPlot(x, y, ver.error, col = ver.error.col, code = ver.error.code, age.dir = "v")
+            ErrorBarsPlot(hor.error, x, y, col = hor.error.col,
+                          code = hor.error.code, hor = TRUE)
+        } else { ## horizontal error polygon
+            ErrorAreaPlot(hor.error, x, y, col = hor.error.col, hor = TRUE)
+        }
+    }
+
+    if (!is.null(ver.error)) {
+        if (ver.error.bars) {
+            ErrorBarsPlot(ver.error, x, y, col = ver.error.col,
+                          code = ver.error.code, hor = FALSE)
+        } else { # vertical error polygon
+            ErrorAreaPlot(ver.error, x, y, col = ver.error.col, hor = FALSE)
         }
     }
     
-
-    ## error area
-
     ## bars between axis and data   
-
+    if (hor.bar) {
+        segments(rep(hor.pol0, length(y)), y, x, col = hor.bar.col, lwd = hor.bar.lwd) 
+    }
+    if (ver.bar) {
+        segments(x, rep(ver.pol0, length(x)), y1 = y, col = hor.bar.col, lwd = hor.bar.lwd) 
+    }
 
     ## plot the record
     points(x, y, type = type, pch = pch, lty = lty, ...)
 
     ## add axes
-
-    ## add GTS?
+    if (!add) {
+        ## loop so that I can specify both 1 and 2 for example.
+        for (i in xax) {
+            AddAxis(i, lim = xlim, ntck = xntck, las = las, labels = xax.labs)
+            AddAxLab(xlab, i, line = xlab.line, adj = xlab.adj, font = xlab.font,
+                     ang = xlab.ang, lab.adj = xlab.align, cex = xlab.cex)
+        }
+        for (i in yax) {
+            AddAxis(i, lim = ylim, ntck = yntck, las = las, labels = yax.labs)
+            AddAxLab(ylab, i, line = ylab.line, adj = ylab.adj, font = ylab.font,
+                     ang = ylab.ang, lab.adj = ylab.align, cex = ylab.cex)
+        }
+    }
 
     ## add corner ABC
 }
@@ -403,13 +448,17 @@ StratPlot.default <- function(age, var, age.dir = "h", GTS = F,
     }
 }
 
-ErrorBarsPlot <- function(age, var = NULL, error, col = "#BEBEBEE6", code = 3,
-                          lwd = 1, length = 0.05, angle = 90, age.dir = "h") {
+ErrorBarsPlot <- function(error, ...) {
+    UseMethod("ErrorBarsPlot", error)
+}
+
+ErrorBarsPlot.default <- function(error, x, y = NULL, col = "#BEBEBEE6", code = 3,
+                                  lwd = 1, length = 0.05, angle = 90, hor = FALSE) {
     ## add error bars to a plot
     ## Args:
     ##     age:  a vector of age/depth values
     ##     var:  a vector of the variable of interest
-    ##   error:  a vector/matrix/dataframe of error values
+    ##   error:  a vector of error values
     ##     col:  the colour of the error bars
     ##    code:  the code of the 'arrows' argument, 3 is caps
     ##     lwd:  the line width of the error bars
@@ -417,34 +466,48 @@ ErrorBarsPlot <- function(age, var = NULL, error, col = "#BEBEBEE6", code = 3,
     ##   angle:  the angle of the arrows to be drawn, default 90 degrees
     ## age.dir:  the direction that age is plotted in, "h" or "v"
     ## data frame or matrix with two columns
-    if (is.data.frame(error) || is.matrix(error) && ncol(error) == 2) {
+    if (!(length(error) == length(var) || length(error) == 1))
+        warning("Length of error not equal to var length, recycling")
+    ## horizontal error bars
+    if (hor) {
+        arrows(x0 = x - error, y0 = y, x1 = x + error, y1 = y,
+               col = col, length = length, angle = angle, code = code,
+               lwd = lwd)
+    } else {  # vertical error bars
+        arrows(x0 = x, y0 = y - error, x1 = x, y1 = y + error,
+               col = col, length = length, angle = angle, code = code,
+               lwd = lwd)
+    }
+}
+
+ErrorBarsPlot.data.frame <- function(error, x, y = NULL, col = "#BEBEBEE6", code = 3,
+                                     lwd = 1, length = 0.05, angle = 90, hor = FALSE) {
+    if (!ncol(error) == 2) {
+        stop("Too many columns in `error'")
+    } else {
         ## Error handling
-        if (!(nrow(error) == 1 || nrow(error) == length(var)))
+        if (!(nrow(error) == 1 || nrow(error) == length(x)))
             warning("Number of rows in error not equal to var length, recycling")
-        if (age.dir == "h")
-            arrows(age, error[, 1], age, error[, 2], col = col, length = length,
+        if (hor) {
+            arrows(error[, 1], y, x1 = error[, 2], y, col = col, length = length,
                    angle = angle, code = code, lwd = lwd)
-        else if (age.dir == "v")
-            arrows(error[, 1], age, error[, 2], age, col = col, length = length,
+        } else { 
+            arrows(x, error[, 1], y1 = error[, 2], col = col, length = length,
                    angle = angle, code = code, lwd = lwd)
-    } else {  # single (vector of) error value(s)
-        if (!(length(error) == length(var) || length(error) == 1))
-            warning("Length of error not equal to var length, recycling")
-        if (age.dir == "h") {
-            arrows(x0 = age, y0 = var - error, x1 = age, y1 = var + error,
-                   col = col, length = length, angle = angle, code = code,
-                   lwd = lwd)
-        }
-        else if (age.dir == "v") {
-            arrows(x0 = var - error, y0 = age, x1 = var + error, y1 = age,
-                   col = col, length = length, angle = angle, code = code,
-                   lwd = lwd)
         }
     }
 }
 
-ErrorAreaPlot <- function(age, var = NULL, error, col = "#BEBEBE4D",
-                          age.dir = "h", ...) {
+ErrorBarsPlot.matrix <- function(error, ...) {
+    ErrorBarsPlot(as.data.frame(error), ...)
+}
+
+ErrorAreaPlot <- function(error, ...) {
+    UseMethod("ErrorAreaPlot", error)
+}
+
+ErrorAreaPlot.default <- function(error, x, y, col = "#BEBEBE4D",
+                          hor = FALSE, ...) {
     ## add an error area to a plot
     ## Args:
     ##     age:  a vector of age/depth values
@@ -454,40 +517,53 @@ ErrorAreaPlot <- function(age, var = NULL, error, col = "#BEBEBE4D",
     ## age.dir:  the direction that age is plotted in, "h" or "v"
     ##     ...:  other arguments for the polygon function
     ## Error handling
-    if (!is.numeric(error) && is.null(var))
-        stop("Provide either dataframe/matrix of low and high error values or vector of relative error values.")
-    ##  error is a dataframe/matrix with 2 columns for negative and positive
-    ##  absolute error values
-    if (is.data.frame(error) || is.matrix(error) && ncol(error) == 2) {
-        ##  TODO: support for NA values in age when specifying strict errorvalues
-        if (nrow(error) != length(var))
-            warning("Number of rows in error not equal to var length, recycling")
-        x <- c(age, rev(age))
-        y <- c(error[, 1], rev(error[, 2]))
-    } else {
-        if (anyNA(var) | anyNA(age)) {
-            enc <- rle(!is.na(var))             # calculate amount of non-NA polygons
-            endIdxs <- cumsum(enc$lengths)      # lengths of polygons
-            for (i in seq_along(enc$lengths)){  # for each polygon
-                if (enc$values[i]){              # for non-na regions
-                    endIdx <- endIdxs[i]
-                    startIdx <- endIdx - enc$lengths[i] + 1
-                    
-                    subdat <- var[startIdx:endIdx]
-                    subsd <- error[startIdx:endIdx]
-                    subage <- age[startIdx:endIdx]
-                    
-                    x <- c(subdat - subsd, rev(subdat + subsd))
-                    y <- c(subage, rev(subage))
+    if (anyNA(x) | anyNA(y)) {
+        enc <- rle(!is.na(y))             # calculate amount of non-NA polygons
+        endIdxs <- cumsum(enc$lengths)      # lengths of polygons
+        for (i in seq_along(enc$lengths)){  # for each polygon
+            if (enc$values[i]){              # for non-na regions
+                endIdx <- endIdxs[i]
+                startIdx <- endIdx - enc$lengths[i] + 1
+                
+                suby <- y[startIdx:endIdx]
+                subsd <- error[startIdx:endIdx]
+                subx <- x[startIdx:endIdx]
+
+                if (hor) {
+                    x <- c(subx, rev(subx))
+                    y <- c(suby - subsd, rev(suyby + subsd))
+                } else {
+                    x <- c(subx - subsd, rev(subx + subsd))
+                    y <- c(suby, rev(suby))
                 }
             }
+        }
+    } else {
+        if (hor) {
+            x <- c(x - error, rev(x + error))
+            y <- c(y, rev(y))
         } else {
-            x <- c(age, rev(age))
-            y <- c(var - error, rev(var + error))
+            x <- c(x, rev(x))
+            y <- c(y - error, rev(y + error))
         }
     }
-    polygon(x = if (age.dir == "h") x else y, y = if (age.dir == "h") y else x,
-            col = col, border = NA, ...)
+    polygon(x = x, y = y, col = col, border = NA, ...)
+}
+
+ErrorAreaPlot.data.frame <- function(error, x, y = NULL, col = "#BEBEBE4D",
+                                     border = NA, hor = FALSE, ...) {
+        if (ncol(error) != 2) { stop("error should be a dataframe with 2 columns") }
+        ##  TODO: support for NA values in x when specifying strict errorvalues
+        if (nrow(error) != length(x))
+            warning("Number of rows in error not equal to var length, recycling")
+        if (hor) {
+            x <- c(error[, 1], rev(error[, 2]))
+            y <- c(y, rev(y))
+        } else {
+            x <- c(x, rev(x))
+            y <- c(error[, 1], rev(error[, 2]))
+        }
+        polygon(x, y, col = col, border = border, ...)
 }
 
 PlotPolygon <- function(x, y, hor = TRUE, pol0 = 0, col = "gray", border = NA,
