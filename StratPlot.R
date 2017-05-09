@@ -8,6 +8,7 @@
 ## polygon- and bar plots plus options to add Geologic Time Scale information.
 
 ## necessary libraries for certain functions
+## TODO: eliminate unnecessary dependencies
 library(astrochron)  # for tuning stratigraphic series
 library(png)         # for working with png images
 library(jpeg)        # for working with jpg images
@@ -123,6 +124,8 @@ Plot.default <- function(x, y = NULL, add = FALSE,  # new plot or add to plot?
     points(x, y, type = type, pch = pch, lty = lty, ...)
 
     ## add axes
+    # TODO: make sure the full axis plots when plotting with yax = 3, log = "y"
+    # TODO: make sure that axis labels work correctly when plotting on a log axis
     if (!add) {
         ## loop so that I can specify both 1 and 2 for example.
         for (i in xax) {
@@ -138,6 +141,11 @@ Plot.default <- function(x, y = NULL, add = FALSE,  # new plot or add to plot?
     }
 
     ## add corner ABC
+}
+
+## TODO: create this function
+Plot.data.frame <- function(df, ...) {
+
 }
 
 StratPlot <- function(var, ...){
