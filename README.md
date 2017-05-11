@@ -1,12 +1,26 @@
-# StratPlot
-The StratPlot function allows you to easily create depth and age profile plots
-in R. 
+# Custom plotting fuctions
 
+## Plot
+My `Plot` function is an S3-method to create beautiful plots using base
+graphics. It slowly builds up the plot, with options to set the margins
+automatically, add polygons and bars from the axes to the data, plot horizontal
+and vertical error bars and error regions (polygons), and create (log) axes with
+nice minor tick marks, power labels (i.e. 10^4) as well as rotated axis titles.
+
+## StratPlot
+The StratPlot function allows you to easily create depth and age profile plots
+in R.
+
+# Usage
+
+## Installation
 The files that you need are `StratPlot.R`, if you're plotting Magnetochron ages 
 `Chronages.csv`, and if you're plotting time GTS2012 time scales `GTS_colours.csv`.
 
-## Usage
+Source the script (`source("StratPlot.R")`) and it allows you to `Plot()`,
+`StratPlot()`, `AddGTS()`, etc.
 
+## Working with stratigraphic (age, depth, variable) data
 Use your spreadsheat editing skills (or R) to create a .csv that holds one
 sample per row with the variables of interest as separate columns. Make sure to
 include depth or age information in one of the columns. 
@@ -22,12 +36,12 @@ can do so by providing `xlab` with a formula. For example:
 nice formatting (H<sub>2</sub>O m<sup>-2</sup> μM).
 
 You can also provide `var` with a matrix or dataframe with the variables of
-interst. The function tries to automatically find a column with `depth` or `age`
-information and use that to plot the other variables. You can also specify it
-with `depthcol`. They can be added to a single plot with `oneplot = TRUE`, can
-be stacked with `stacked = TRUE` (useful for cumulative sum plots) or each
+interest. The function tries to automatically find a column with `depth` or
+`age` information and use that to plot the other variables. You can also specify
+it with `depthcol`. They can be added to a single plot with `oneplot = TRUE`,
+can be stacked with `stacked = TRUE` (useful for cumulative sum plots) or each
 create a new plot (default). The function also tries to figure out whether it
-should use "Age (Ma)" or "Age (ka)" based on the age variable.
+should use `"Age (Ma)"` or `"Age (ka)"` based on the age variable.
 
 When you create multiple plots, make sure there is room for the plots (via
 `par(mfrow = c(1,5))` for example). `xlab` and `ylab` can now also be entered as

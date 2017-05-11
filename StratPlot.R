@@ -2,10 +2,11 @@
 ## Ilja Kocken
 ## Student of Marine Sciences at Utrecht University
 ## First version: 2014-04-11
-## Latest version: 2017-03-07
+## Latest version: 2017-05-11
 
 ## Plot your age/depth data beautifully, with options for logaritmic axes, easy
-## polygon- and bar plots plus options to add Geologic Time Scale information.
+## polygon- and bar plots, error bars/regions, and options to add Geologic Time
+## Scale information and core photographs.
 
 ## necessary libraries for certain functions
 ## TODO: eliminate unnecessary dependencies
@@ -24,39 +25,37 @@ Plot <- function(var, ...) {
 ## sample position. It also allows for errorbars and errorregions in both
 ## directions.
 Plot.default <- function(x, y = NULL, add = FALSE,  # new plot or add to plot?
-                         xlab = NULL, ylab = NULL,
-                         ## position of x- and y-axis
-                         xax = 1, yax = 2, xlim = NULL, ylim = NULL,
-                         ## number of minor ticks between major ticks
-                         xntck = 2, yntck = 2,
-                         mar = "auto", # plot margins
+                         xlab = NULL, ylab = NULL, ## position of x- and y-axis
+                         xax = 1, yax = 2, xlim = NULL, ylim = NULL, ## number of minor ticks between major ticks
+                         xntck = 2, yntck = 2, mar = "auto", # plot margins
                          ## default graphical parameters
-                         type = "o", pch = 16, lty = 1, las = 1, bty = "n", log = "", 
-                         ## xaxis parameters
-                         xax.labs = NULL, xlab.ang = 0, xlab.adj = NA,
+                         type = "o", pch = 1, lty = 1, las = 1, bty = "n",
+                         log = "", ## xaxis parameters
+                         xax.labs = TRUE, xlab.ang = NULL, xlab.adj = NA,
                          xlab.line = 2, xlab.align = c(0.5, NA), xlab.cex = 1,
                          xlab.font = 1,
                          ## yaxis parameters
-                         yax.labs = NULL, ylab.ang = 0, ylab.adj = NA,
+                         yax.labs = TRUE, ylab.ang = NULL, ylab.adj = NA,
                          ylab.line = 2, ylab.align = c(0.5, NA), ylab.cex = 1,
                          ylab.font = 1,
                          ## polygon parameters
-                         hor.pol0 = 1e-100, hor.pol = FALSE,
-                         hor.pol.col = "#4682B4E6", hor.pol.border = NA,
-                         ver.pol0 = 1e-100, ver.pol = FALSE,
-                         ver.pol.col = "#4682B4E6", ver.pol.border = NA,
+                         xpol = FALSE, xpol0 = 1e-100, 
+                         xpol.col = "#4682B4E6", xpol.border = NA,
+                         ypol = FALSE, ypol0 = 1e-100, 
+                         ypol.col = "#4682B4E6", ypol.border = NA,
                          ## bar parameters
-                         hor.bar = FALSE, hor.bar.col = "orange", hor.bar.lwd = 2,
-                         ver.bar = FALSE, ver.bar.col = "orange", ver.bar.lwd = 2,
+                         xbar = FALSE, xbar.col = "orange", xbar.lwd = 2,
+                         ybar = FALSE, ybar.col = "orange", ybar.lwd = 2,
                          ## error bars
-                         hor.error = NULL,
-                         ## logical: bars, false = polygon
-                         hor.error.bars = TRUE, 
-                         hor.error.col = "#BEBEBEE6", hor.error.code = 3,
-                         ver.error = NULL, ver.error.bars = TRUE,
-                         ver.error.col = "#BEBEBEE6", ver.error.code = 3,
-                         verbose = TRUE, ...) {
+                         xerror = NULL, xerror.bars = TRUE, # logical: bars, false = polygon
+                         xerror.col = "#BEBEBEE6", xerror.code = 3,
+                         yerror = NULL, yerror.bars = TRUE,
+                         yerror.col = "#BEBEBEE6", yerror.code = 3,
+                         xgap.size = NULL, ygap.size = NULL, verbose = TRUE,
+                         ...) {
+    ## a new plot is generated
     if (!add) {
+        ## set up plotting margins
         ##  mar (depends on xax and yax, which are not checked)
         if (identical(mar, "auto")) {
             mar <- c(if (1 %in% xax || 1 %in% yax) 5 else 2,
@@ -66,67 +65,21 @@ Plot.default <- function(x, y = NULL, add = FALSE,  # new plot or add to plot?
         } else if (identical(mar, "inherit")) {
             mar <- par(no.readonly = TRUE)$mar
         }
+        par(mar = mar, bty = bty)
         
-        ##  xlim, ylim
+        ##  default xlim, ylim
         if (is.null(xlim)) xlim <- range(x, na.rm = TRUE)
         if (is.null(ylim)) ylim <- range(y, na.rm = TRUE)
         
-        ##  set up plotting margins
-        par(mar = mar, bty = bty)
-        
-        ##  set up empty plot
+        ## create an empty plot
         plot(1, type = "n", xlim = xlim, ylim = ylim, log = log,
              xlab = "", ylab = "", axes = FALSE, ...)
-        ## axes added later
-    }
-    
-    ## add polygon between axis and data
-    if (hor.pol) {
-        PlotPolygon(x, y, hor = TRUE, pol0 = hor.pol0, col = hor.pol.col,
-                    border = hor.pol.border)
-    }
-    if (ver.pol) {
-        PlotPolygon(x, y, hor = FALSE, pol0 = ver.pol0, col = ver.pol.col,
-                    border = ver.pol.border)
-    }
 
-    ## add data exaggeration lines
-    # TODO
+        ## default axis labels
+        if (is.null(xlab)) xlab <- deparse(substitute(x))
+        if (is.null(ylab)) ylab <- deparse(substitute(y))
 
-    ## error bars
-    if (!is.null(hor.error)) {
-        if (hor.error.bars) {
-            ErrorBarsPlot(hor.error, x, y, col = hor.error.col,
-                          code = hor.error.code, hor = TRUE)
-        } else { ## horizontal error polygon
-            ErrorAreaPlot(hor.error, x, y, col = hor.error.col, hor = TRUE)
-        }
-    }
-
-    if (!is.null(ver.error)) {
-        if (ver.error.bars) {
-            ErrorBarsPlot(ver.error, x, y, col = ver.error.col,
-                          code = ver.error.code, hor = FALSE)
-        } else { # vertical error polygon
-            ErrorAreaPlot(ver.error, x, y, col = ver.error.col, hor = FALSE)
-        }
-    }
-    
-    ## bars between axis and data   
-    if (hor.bar) {
-        segments(rep(hor.pol0, length(y)), y, x, col = hor.bar.col, lwd = hor.bar.lwd) 
-    }
-    if (ver.bar) {
-        segments(x, rep(ver.pol0, length(x)), y1 = y, col = hor.bar.col, lwd = hor.bar.lwd) 
-    }
-
-    ## plot the record
-    points(x, y, type = type, pch = pch, lty = lty, ...)
-
-    ## add axes
-    # TODO: make sure the full axis plots when plotting with yax = 3, log = "y"
-    # TODO: make sure that axis labels work correctly when plotting on a log axis
-    if (!add) {
+        ## add axes
         ## loop so that I can specify both 1 and 2 for example.
         for (i in xax) {
             AddAxis(i, lim = xlim, ntck = xntck, las = las, labels = xax.labs)
@@ -139,15 +92,76 @@ Plot.default <- function(x, y = NULL, add = FALSE,  # new plot or add to plot?
                      ang = ylab.ang, lab.adj = ylab.align, cex = ylab.cex)
         }
     }
+    
+    ## add gaps between points that are spaced too far
+    if (!is.null(xgap.size) || !is.null(ygap.size)) {
+        df <- data.frame(x, y)
+        if (!is.null(xgap.size)) {
+            xtoo.large <- which(diff(x) > xgap.size)
+            df <- InsertEmpty(df, xtoo.large)
+        }
+        if (!is.null(ygap.size)) {
+            ytoo.large <- which(diff(y) > ygap.size)
+            df <- InsertEmpty(df, ytoo.large)
+        }
+        x <- df$x
+        y <- df$y
+    }
+ 
+    ## add polygon between axis and data
+    if (xpol) {
+        PlotPolygon(x, y, hor = TRUE, pol0 = xpol0, col = xpol.col,
+                    border = xpol.border)
+    }
+    if (ypol) {
+        PlotPolygon(x, y, hor = FALSE, pol0 = ypol0, col = ypol.col,
+                    border = ypol.border)
+    }
 
-    ## add corner ABC
+    ## add data exaggeration lines
+    # TODO: decide if I want to support this in base plot...
+
+    ## horizontal error bars
+    if (!is.null(xerror)) {
+        if (xerror.bars) {
+            ErrorBarsPlot(xerror, x, y, col = xerror.col,
+                          code = xerror.code, hor = TRUE)
+        } else { ## horizontal error polygon
+            ErrorAreaPlot(xerror, x, y, col = xerror.col, hor = TRUE)
+        }
+    }
+
+    ## bars between axis and data   
+    if (xbar) {
+        segments(rep(xpol0, length(y)), y, x, col = xbar.col, lwd = xbar.lwd) 
+    }
+    if (ybar) {
+        segments(x, rep(ypol0, length(x)), y1 = y, col = xbar.col, lwd = xbar.lwd) 
+    }
+
+    ## vertical error bars
+    if (!is.null(yerror)) {
+        if (yerror.bars) {
+            ErrorBarsPlot(yerror, x, y, col = yerror.col,
+                          code = yerror.code, hor = FALSE)
+        } else { # vertical error polygon
+            ErrorAreaPlot(yerror, x, y, col = yerror.col, hor = FALSE)
+        }
+    }
+    
+    ## plot the record
+    points(x, y, type = type, pch = pch, lty = lty, ...)
+
+    ## TODO: add corner ABC?
 }
 
 ## TODO: create this function
 Plot.data.frame <- function(df, ...) {
+    ## TODO: should handle oneplot=T and frames?
 
 }
 
+## Same as plot but with depth/time specific defaults
 StratPlot <- function(var, ...){
     ## S3-method for the main plotting function
     ## Args:
@@ -156,6 +170,7 @@ StratPlot <- function(var, ...){
     UseMethod("StratPlot", var)
 }
 
+## Creates a plot based on a depth/age vector and a variable vector
 StratPlot.default <- function(age, var, age.dir = "h", GTS = F,
                               pol = F, pol0 = NULL, pol.col = "#4682B4E6",
                               border = NA, bar = F, bar.col = "orange",
@@ -163,7 +178,7 @@ StratPlot.default <- function(age, var, age.dir = "h", GTS = F,
                               error.type = "bars", error.col = "#BEBEBEE6",
                               error.lwd = 1, error.code = 3, gap.size = NULL,
                               abc = NULL, abc.adj = NULL, exaggerate = NULL,
-                              ex.type = "l", ex.lty = 1, ex.col = "gray",
+                              extype = "l", exlty = 1, excol = "gray",
                               mar = "inherit",
                               xax = if (age.dir == "h") 1 else 3, yax = 2,
                               xlim = NULL, ylim = NULL, xlab = NULL,
@@ -176,89 +191,6 @@ StratPlot.default <- function(age, var, age.dir = "h", GTS = F,
                               xtck = NULL, ytck = NULL, xntck = 2, yntck = 2,
                               las = 1, log = "", bty = "n", type = "o", lty = 1,
                               pch = 16, verbose = TRUE, ...) {
-    ## Creates a plot based on a depth/age vector and a variable vector
-    ## Args:
-    ##     age: vector with age or depth information
-    ##     var:
-    ## age.dir: direction of age "v", "ver", "vertical" or "h" "hor" "horizontal"
-    ## GTS colour scale on age axis
-    ## value of exaggeration line to add
-    ## polygon to plot
-    ## bar to plot
-    ## mar: or "auto" or specified
-    ## logical, add to plot or start new one
-    ## vector of relative errors or matrix/df of absolute values to plot
-    ## don't draw lines when agediff is larger
-    ## add index letter topleft
-    ## positions of minor tick marks
-    ## number of minor tick marks between major marks
-    ## default plot/log options
-    ## default positions of axes (1:4)
-    ## other graphical parameters
-
-    ## age:
-    ## var:
-    ## age.dir = "h"
-    ## GTS = F:
-    ## pol = F:
-    ## pol0 = NULL:
-    ## pol.col = "#4682B4E6",
-    ## border = NA:
-    ## bar = F:
-    ## bar.col = "orange",
-    ## bar.lwd = 2:
-    ## add = F:
-    ## error = NULL:
-    ## error.type = "bars":
-    ## error.col = "#BEBEBEE6":
-    ## error.lwd = 1:
-    ## error.code = 3:
-    ## gap.size = NULL:
-    ## abc = NULL:
-    ## abc.adj = NULL:
-    ## exaggerate = NULL:
-    ## ex.type = "l":
-    ## ex.lty = 1:
-    ## ex.col = "gray":
-    ## mar = "inherit":
-    ## xax = if (age.dir == "h") 1 else 3:
-    ## yax = 2:
-    ## xlim = NULL:
-    ## ylim = NULL:
-    ## xlab = NULL:
-    ## ylab = NULL:
-    ## xlab.line = 2:
-    ## ylab.line = 2:
-    ## xlab.font = 1:
-    ## ylab.font = 1:
-    ## xlab.adj = NA:
-    ## ylab.adj = NA:
-    ## xlab.align = c(0.5, NA):
-    ## ylab.align = c(0.5, NA):
-    ## xlab.ang = NULL:
-    ## ylab.ang = NULL:
-    ## xax.labs = NULL:
-    ## yax.labs = NULL:
-    ## xlab.cex = 1:
-    ## ylab.cex = 1:
-    ## xtck = NULL:
-    ## ytck = NULL:
-    ## xntck = 2:
-    ## yntck = 2:
-    ## las = 1:
-    ## log = "":
-    ## bty = "n":
-    ## type = "o":
-    ## lty = 1:
-    ## pch = 16:
-    ## verbose = TRUE:
-    ## ...:
-    
-    ## Era = F, Period = T, Epoch = T, Age = F, GTSfrac = .05,
-    ## TODO: add standard Geologic Time Scale to region near x or y axis
-    ## xlab.pos = NULL, ylab.pos = NULL,
-
-   
     ##  check var and age
     if (length(var) != length(age)) {
         stop("Unequal length of var and age")
@@ -283,7 +215,7 @@ StratPlot.default <- function(age, var, age.dir = "h", GTS = F,
         ## set up a new plot
 
 
-        ### TODO: this should all be done by Plot()
+        ## TODO: Make Stratplot work again with the new Plot backend
         ##  mar (depends on xax and yax, which are not checked)
         if (identical(mar, "auto")) {
             mar <- c(if (1 %in% xax || 1 %in% yax) 5 else 2,
@@ -392,7 +324,7 @@ StratPlot.default <- function(age, var, age.dir = "h", GTS = F,
     if (!is.null(exaggerate)) {
         points(if (age.dir == "h") age else var * exaggerate,
                if (age.dir == "h") var * exaggerate else age,
-               type = ex.type, lty = ex.lty, col = ex.col) 
+               type = extype, lty = exlty, col = excol) 
     }
     
     ## plot error bars/area
@@ -456,10 +388,12 @@ StratPlot.default <- function(age, var, age.dir = "h", GTS = F,
     }
 }
 
+## add error bars to a plot
 ErrorBarsPlot <- function(error, ...) {
     UseMethod("ErrorBarsPlot", error)
 }
 
+## add error bars based on a vector of relative errors
 ErrorBarsPlot.default <- function(error, x, y = NULL, col = "#BEBEBEE6", code = 3,
                                   lwd = 1, length = 0.05, angle = 90, hor = FALSE) {
     ## add error bars to a plot
@@ -488,6 +422,7 @@ ErrorBarsPlot.default <- function(error, x, y = NULL, col = "#BEBEBEE6", code = 
     }
 }
 
+## add error bars based on a data.frame of absolute errors
 ErrorBarsPlot.data.frame <- function(error, x, y = NULL, col = "#BEBEBEE6", code = 3,
                                      lwd = 1, length = 0.05, angle = 90, hor = FALSE) {
     if (!ncol(error) == 2) {
@@ -495,7 +430,7 @@ ErrorBarsPlot.data.frame <- function(error, x, y = NULL, col = "#BEBEBEE6", code
     } else {
         ## Error handling
         if (!(nrow(error) == 1 || nrow(error) == length(x)))
-            warning("Number of rows in error not equal to var length, recycling")
+            warning("Number of rows in error not equal to length(x), recycling")
         if (hor) {
             arrows(error[, 1], y, x1 = error[, 2], y, col = col, length = length,
                    angle = angle, code = code, lwd = lwd)
@@ -506,24 +441,19 @@ ErrorBarsPlot.data.frame <- function(error, x, y = NULL, col = "#BEBEBEE6", code
     }
 }
 
+## add error bars based on matrix of absolute errors
 ErrorBarsPlot.matrix <- function(error, ...) {
     ErrorBarsPlot(as.data.frame(error), ...)
 }
 
+## add an error area to a plot
 ErrorAreaPlot <- function(error, ...) {
     UseMethod("ErrorAreaPlot", error)
 }
 
+## add an error area to a plot based on a vector of relative error values
 ErrorAreaPlot.default <- function(error, x, y, col = "#BEBEBE4D",
                           hor = FALSE, ...) {
-    ## add an error area to a plot
-    ## Args:
-    ##     age:  a vector of age/depth values
-    ##     var:  a vector of the variable of interest
-    ##   error:  a vector/matrix/dataframe of error values
-    ##     col:  the colour of the error bars
-    ## age.dir:  the direction that age is plotted in, "h" or "v"
-    ##     ...:  other arguments for the polygon function
     ## Error handling
     if (anyNA(x) | anyNA(y)) {
         enc <- rle(!is.na(y))             # calculate amount of non-NA polygons
@@ -558,6 +488,7 @@ ErrorAreaPlot.default <- function(error, x, y, col = "#BEBEBE4D",
     polygon(x = x, y = y, col = col, border = NA, ...)
 }
 
+## Plot an error area based on a data frame of absolute error values
 ErrorAreaPlot.data.frame <- function(error, x, y = NULL, col = "#BEBEBE4D",
                                      border = NA, hor = FALSE, ...) {
         if (ncol(error) != 2) { stop("error should be a dataframe with 2 columns") }
@@ -574,6 +505,7 @@ ErrorAreaPlot.data.frame <- function(error, x, y = NULL, col = "#BEBEBE4D",
         polygon(x, y, col = col, border = border, ...)
 }
 
+## Plot a polygon between the horizontal or vertical axis and the data
 PlotPolygon <- function(x, y, hor = TRUE, pol0 = 0, col = "gray", border = NA,
                         verbose = TRUE, ...) {
     if (anyNA(x) || anyNA(y)) {
@@ -636,7 +568,7 @@ StratPlot.data.frame <- function(var, # dataframe
                                  lwd = 1, lty = 1, type = "o", pch = 16,
                                  error.type = "bars", pol0 = NULL, 
                                  error.col = "#BEBEBEE6", pol.col = "#4682BEE6",
-                                 ex.col = "#325C87", bar.col = "#325C87",
+                                 excol = "#325C87", bar.col = "#325C87",
                                  border = NULL, legend = NULL) {
     ##  Takes a dataframe of one or multiple variable(s) to  create a (set of) plot(s)
     ## subset numeric columns
@@ -797,10 +729,10 @@ StratPlot.data.frame <- function(var, # dataframe
         } else stop("Incorrect length of bar.col")
     }
 
-    if (length(ex.col) > 1) {
-        if (length(ex.col) == nvar) {
-            ex.cols <- ex.col
-        } else stop("Incorrect length of ex.col")
+    if (length(excol) > 1) {
+        if (length(excol) == nvar) {
+            excols <- excol
+        } else stop("Incorrect length of excol")
     }
 
     if (is.list(ylim)){
@@ -853,7 +785,7 @@ StratPlot.data.frame <- function(var, # dataframe
                   error.type = error.type, error.col = error.col, pol0 = pol0,
                   pol.col = if (exists("pol.cols")) pol.cols[i] else pol.col,
                   bar.col = if (exists("bar.cols")) bar.cols[i] else bar.col,
-                  ex.col = if (exists("ex.cols")) ex.cols[i] else ex.col,
+                  excol = if (exists("excols")) excols[i] else excol,
                   border = border, ...)
     }
     if (!is.null(legend)) {
@@ -864,41 +796,32 @@ StratPlot.data.frame <- function(var, # dataframe
     }
 }
 
+## apply the stratplotter to all the elements of a list
 StratPlot.list <- function(ls, ...) {
-    ## apply the stratplotter to all the elements of a list
-    ## Args:
-    ##   ls: the list who's elements are to be plotted
-    ##  ...: other arguments
     lapply(ls, StratPlot, ...)
 }
 
+## subset dataframe to range of age/depth
 SubsetRange <- function(dat, min, max, column = "depth") {
-    ## subset dataframe to range of age/depth
-    ## Args:
-    ##    dat: the dataframe to be subsetted
-    ##    min: the minimum value to subset by
-    ##    max: the maxiumum value to subset by
-    ## column: the column name to subset by
     return(dat[dat[, column] > min & dat[, column] < max, ])
 }
 
-GapMaker <- function(df, gap.size = .5, column = "age") {
-    ## insert empty rows between values that differ more than gap.size
-    ## Args:
-    ##       df: the data frame
-    ## gap.size: the size of the gaps
+## insert empty rows between values that differ more than gap.size
+GapMaker <- function(df, gap.size = .5, column = NULL, verbose = TRUE) {
     ##   column: the column name to base gaps on
+    if (is.null(column)) {
+        if (length(grepl("age|Age", colnames(df))) >= 1) {
+            column <- grep("age|Age", colnames(df))[1]
+            if (verbose) message("Using column", colnames(df)[grep("age|Age", colnames(df))[1]])
+        } else { column <- 1 }
+    } 
     too.large <- which(diff(df[, column]) > gap.size)
     df <- InsertEmpty(df, too.large)
     return(df)
 }
 
+## insert empty rows in a dataframe after afterrow
 InsertEmpty <- function(df, afterrow) {
-    ## insert empty rows in a dataframe after afterrow
-    ## Args:
-    ##       df: the dataframe
-    ## afterrow: empty row is inserted after this row
-    ##  create indices for the data order
     df$id <- seq_len(nrow(df))
     df[max(df$id) + seq_along(afterrow), ] <- NA
     df$id[is.na(df$id)] <- afterrow + .5
@@ -907,20 +830,10 @@ InsertEmpty <- function(df, afterrow) {
     return(df)
 }
 
-AddAxis <- function(ax = 1, labels = NULL, lim = NULL, ntck = NULL,
+## adds a pretty axis, with minor ticks and pretty log options
+AddAxis <- function(ax = 1, labels = TRUE, lim = NULL, ntck = 2,
                     tck = NULL, las = 1, ...) {
-    ## adds a pretty axis, with minor ticks and pretty log options
-    ## Args:
-    ##     ax:
-    ## labels:
-    ##    lim:
-    ##   ntck:
-    ##    tck:
-    ##    las:
-    ##    ...:
-    if (is.null(ntck)) {
-        ntck <- 2
-    }
+    ## TODO: add log.base option for i.e. base2 or base e
     if (ax %in% c(1, 3)) {  # bottom or top x-axis
         log <- par("xlog")
         if (is.null(lim) && log) {
@@ -939,28 +852,31 @@ AddAxis <- function(ax = 1, labels = NULL, lim = NULL, ntck = NULL,
         pow <- c(
             if (lim[1] == 0) -100
             else if (lim[1] > 0) floor(log10(lim[1]))
-                else - floor(log10(-lim[1])),
-                if (lim[2] == 0) -100
-                else if (lim[2] > 0) ceiling(log10(lim[2]))
-                else -ceiling(log10(-lim[2]))) 
-        if (is.null(tck)) 
+            else - floor(log10(-lim[1])),
+            if (lim[2] == 0) -100
+            else if (lim[2] > 0) ceiling(log10(lim[2]))
+            else -ceiling(log10(-lim[2]))) 
+        if (is.null(tck)) {
             tck <- c(1:10 %o% 10^((pow)[1]:(pow)[2]))
+        }
         ## log axis with nicer 10^pow labels for all the ax
-        if (is.null(labels))
+        if (labels) {
             labels <- sapply((pow)[1]:(pow)[2], # or -xpow[1]?
                              function(i) {
                                  as.expression(bquote(10^ .(i)))})
+        }
         axis(ax, at = 10^(pow[1]:pow[2]), labels = labels, las = las, ...)
     } else {  # non-log axis
         ## default axis
-        axis(ax, las = las, labels = labels, ...)
+        axis(ax, at = axTicks(ax), las = las, labels = labels, ...)
         ## find stepsize used in default axis
-        if (is.null(tck)) 
+        if (is.null(tck)) {
             stepsize <- abs(diff(axTicks(ax)[1:2])) / ntck
             ## add ntck ticks between
             tck <- seq(from = min(axTicks(ax)) - stepsize * ntck,
                        to = max(axTicks(ax)) + stepsize * ntck,
                        by = stepsize)
+        }
     }
     ## minor x-axis tick marks
     axis(ax, at = tck, labels = FALSE, tcl = -.2)
@@ -971,24 +887,9 @@ AddAxis <- function(ax = 1, labels = NULL, lim = NULL, ntck = NULL,
 
 AddAxLab <- function (lab = "", side = 1, line = 2, adj = NA,
                       lab.adj = c(0.5, NA), cex = 1, ang = NULL, pos = NULL,
-                      font = 1, x = NULL, y = NULL, ...) {
-    ## add axis labels
-    ## Args:
-    ##     lab:
-    ##    side:
-    ##    line:
-    ##     adj:
-    ## lab.adj: 
-    ##     cex:
-    ##     ang:
-    ##     pos:
-    ##    font:
-    ##       x:
-    ##       y:
-    ##     ...:
-
-    ## no angle, and no specific x and y position for the label just use mtext
-    if (is.null(ang) || (!is.null(x) && !is.null(y))) {
+                      font = 1, x = NULL, y = NULL, las = 2, ...) {
+    ## use mtext if there is no angle and no specific x and y position
+    if (is.null(ang) && (is.null(x) && is.null(y))) {
         mtext(lab, side = side, line = line, adj = adj, pos = pos,
               font = font, cex = cex, ...)
     } else {
@@ -1117,7 +1018,7 @@ AddGTS <- function(age, xleft = NULL, xright = NULL, frac = 0.05,
     }
 
     ## this subfunction plots one gts bar
-    PlotGTS <- function(xleft, xright, gts, ad, td = T, cex.t, textpos = NULL) {
+    PlotGTS <- function(xleft, xright, gts, ad, td = T, cext, textpos = NULL) {
         ## add rectangles with appropriate colour
         rect(if (ad == "h") gts$start else xleft,
              if (ad == "h") xleft else gts$start,
@@ -1132,7 +1033,7 @@ AddGTS <- function(age, xleft = NULL, xright = NULL, frac = 0.05,
              if (ad == "h") mean(c(xleft, xright)) else gts$mean,
              labels = gts$name,
              srt = if (td) 0 else 90,
-             cex = cex.t, pos = textpos)
+             cex = cext, pos = textpos)
     }
 
     nbars <- sum(type)
@@ -1143,14 +1044,14 @@ AddGTS <- function(age, xleft = NULL, xright = NULL, frac = 0.05,
         PlotGTS(xleft, xright,
                 if (types[bar] != "Chron") GTS[GTS$type == types[bar], ]
                 else Chron,
-                ad = age.dir, td = horizontal.text[bar], cex.t = cex.text[bar],
+                ad = age.dir, td = horizontal.text[bar], cext = cex.text[bar],
                 textpos = if (types[bar] != "Chron") NULL else NULL)
                 ## TODO: fix text position for chron to right of xright with pos = 4.
         xleft <- xright
     }
 }
 
-## TODO: create addChron function that does the same as AddGTS but with
+## TODO: create AddChron function that does the same as AddGTS but with
 ## normal/reversed magnetostrat + names
 
 Darken <- function(color = col, factor=1.4){
@@ -1178,40 +1079,41 @@ Lighten <- function(color = col, factor=1.4){
 }
 
 ## adds a linear model with confidence levels to the plot
-plotLM <- function(x = NULL, y = NULL, confidence = 0.90,
-                   col = "red", lty = 2, lwd = 1) {
+PlotLM <- function(x = NULL, y = NULL, confidence = 0.95, col = "#BEBEBE44",
+                   line.col = "#E80000FF", border = NA, lwd = 2, ...) {
     ## linmod = NULL, 
     ## if (is.null(linmod) && (is.null(x) && is.null(y))) stop("Specify x and y or linmod")
     ## if (is.null(linmod)) linmod <- lm(y ~ x)
     linmod <- lm(y ~ x)
     ## TODO: doesn't work with only linmod because of variable names in newdata
     ## plot(a,y,xlim=c(20,90),ylim=c(0,80))
-    abline(linmod, col="red")
     newx <- seq(par("usr")[1], par("usr")[2], length.out = 100)
-    prd<-predict(linmod,
-                 newdata = data.frame(x = newx),
-                 interval = c("confidence"), 
-                 level = confidence, type="response")
-    lines(newx,prd[,2],col = col, lty = lty, lwd = lwd)
-    lines(newx,prd[,3],col = col, lty = lty, lwd = lwd)
+    prd <- predict(linmod,
+                   newdata = data.frame(x = newx),
+                   interval = c("confidence"), 
+                   level = confidence, type= "response")
+    polygon(c(newx, rev(newx)), c(prd[, 2], rev(prd[, 3])), col = col, border = border, ...)
+    abline(linmod, col = line.col, lwd = lwd)
+    ## lines(newx,prd[,2],col = col, lty = lty, lwd = lwd)
+    ## lines(newx,prd[,3],col = col, lty = lty, lwd = lwd)
 }
 
-## plots the R2 value of a linear model in a corner
-plotLMinfo <- function(linmod, pos = "topleft", formula.offset = 1, digits = 4) {
+## plots the R2 value and the equation of a linear model in a corner
+PlotLMinfo <- function(x, y, pos = "topleft", formula.offset = -1, digits = 4) {
+    linmod <- lm(y ~ x)
     r2 <- bquote(R^2~"="~.(format(summary(linmod)$adj.r.squared,
                                            digits = digits)))
     form <- bquote("y ="~.(format(summary(linmod)$coefficients[2],
                                   digits = digits))~
                       "x +"~.(format(summary(linmod)$coefficients[1],
                                   digits = digits)))
-    lgdinfo <- legend(pos, bty="n", legend = form, trace = T)
+    lgdinfo <- legend(pos, bty="n", legend = form)
     legend(lgdinfo$rect$left, lgdinfo$rect$top + formula.offset,
-           bty="n", legend = r2, trace = T)
-
+           bty="n", legend = r2)
 }
 
-## convert excel species names to proper abbreviations
-prettyNames <- function(names) {
+## convert excel dinocyst species names to proper abbreviations
+PrettyNames <- function(names) {
     names <- str_replace_all(names, "\\.", " ") # remove all dots
     names <- str_replace_all(names, "cpx *", "cpx\\. ") # add dots to abbrevs
     names <- str_replace_all(names, "spp *", "spp\\. ")
@@ -1234,7 +1136,7 @@ prettyNames <- function(names) {
 }
 
 ## plot species occurrence as a function of depth
-plotOccurrence <- function(dino, sort = "alphFO",
+PlotOccurrence <- function(dino, sort = "alphFO",
                            depth = NULL,
                            xlab = "Age (Ma)",
                            xax = 3,

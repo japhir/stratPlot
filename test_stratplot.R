@@ -10,7 +10,7 @@ errorNA <- error; errorNA[10] <- NA
 errordf <- data.frame(error, error + 50)
 errordfNA <- errordf; errordf[10, 1] <- NA
 
-stratPlot(var1, age)
+StratPlot(var1, age)
 stratPlot(varNA, age)
 stratPlot(var1, ageNA)
 stratPlot(var1, age, agedir = "v")
