@@ -124,10 +124,10 @@ Plot.default <- function(x, y = NULL, add = FALSE,  # new plot or add to plot?
     ## horizontal error bars
     if (!is.null(xerror)) {
         if (xerror.bars) {
-            ErrorBarsPlot(xerror, x, y, col = xerror.col,
+            PlotErrorBars(xerror, x, y, col = xerror.col,
                           code = xerror.code, hor = TRUE)
         } else { ## horizontal error polygon
-            ErrorAreaPlot(xerror, x, y, col = xerror.col, hor = TRUE)
+            PlotErrorArea(xerror, x, y, col = xerror.col, hor = TRUE)
         }
     }
 
@@ -142,10 +142,10 @@ Plot.default <- function(x, y = NULL, add = FALSE,  # new plot or add to plot?
     ## vertical error bars
     if (!is.null(yerror)) {
         if (yerror.bars) {
-            ErrorBarsPlot(yerror, x, y, col = yerror.col,
+            PlotErrorBars(yerror, x, y, col = yerror.col,
                           code = yerror.code, hor = FALSE)
         } else { # vertical error polygon
-            ErrorAreaPlot(yerror, x, y, col = yerror.col, hor = FALSE)
+            PlotErrorArea(yerror, x, y, col = yerror.col, hor = FALSE)
         }
     }
     
@@ -336,11 +336,11 @@ StratPlot.default <- function(age, var, age.dir = "h", GTS = F,
                         "', specify error.type as 'bars' or 'area'"))
         }
         if ("bars" %in% error.type) {
-            ErrorBarsPlot(age, var, error, col = error.col, code = error.code,
+            PlotErrorBars(age, var, error, col = error.col, code = error.code,
                           age.dir = age.dir, lwd = error.lwd)
         }
         if ("area" %in% error.type) {
-            ErrorAreaPlot(age, var, error, col = error.col,
+            PlotErrorArea(age, var, error, col = error.col,
                           age.dir = age.dir)
         }
         ## }
@@ -389,12 +389,12 @@ StratPlot.default <- function(age, var, age.dir = "h", GTS = F,
 }
 
 ## add error bars to a plot
-ErrorBarsPlot <- function(error, ...) {
-    UseMethod("ErrorBarsPlot", error)
+PlotErrorBars <- function(error, ...) {
+    UseMethod("PlotErrorBars", error)
 }
 
 ## add error bars based on a vector of relative errors
-ErrorBarsPlot.default <- function(error, x, y = NULL, col = "#BEBEBEE6", code = 3,
+PlotErrorBars.default <- function(error, x, y = NULL, col = "#BEBEBEE6", code = 3,
                                   lwd = 1, length = 0.05, angle = 90, hor = FALSE) {
     ## add error bars to a plot
     ## Args:
@@ -423,7 +423,7 @@ ErrorBarsPlot.default <- function(error, x, y = NULL, col = "#BEBEBEE6", code = 
 }
 
 ## add error bars based on a data.frame of absolute errors
-ErrorBarsPlot.data.frame <- function(error, x, y = NULL, col = "#BEBEBEE6", code = 3,
+PlotErrorBars.data.frame <- function(error, x, y = NULL, col = "#BEBEBEE6", code = 3,
                                      lwd = 1, length = 0.05, angle = 90, hor = FALSE) {
     if (!ncol(error) == 2) {
         stop("Too many columns in `error'")
@@ -442,17 +442,17 @@ ErrorBarsPlot.data.frame <- function(error, x, y = NULL, col = "#BEBEBEE6", code
 }
 
 ## add error bars based on matrix of absolute errors
-ErrorBarsPlot.matrix <- function(error, ...) {
-    ErrorBarsPlot(as.data.frame(error), ...)
+PlotErrorBars.matrix <- function(error, ...) {
+    PlotErrorBars(as.data.frame(error), ...)
 }
 
 ## add an error area to a plot
-ErrorAreaPlot <- function(error, ...) {
-    UseMethod("ErrorAreaPlot", error)
+PlotErrorArea <- function(error, ...) {
+    UseMethod("PlotErrorArea", error)
 }
 
 ## add an error area to a plot based on a vector of relative error values
-ErrorAreaPlot.default <- function(error, x, y, col = "#BEBEBE4D",
+PlotErrorArea.default <- function(error, x, y, col = "#BEBEBE4D",
                           hor = FALSE, ...) {
     ## Error handling
     if (anyNA(x) | anyNA(y)) {
@@ -489,7 +489,7 @@ ErrorAreaPlot.default <- function(error, x, y, col = "#BEBEBE4D",
 }
 
 ## Plot an error area based on a data frame of absolute error values
-ErrorAreaPlot.data.frame <- function(error, x, y = NULL, col = "#BEBEBE4D",
+PlotErrorArea.data.frame <- function(error, x, y = NULL, col = "#BEBEBE4D",
                                      border = NA, hor = FALSE, ...) {
         if (ncol(error) != 2) { stop("error should be a dataframe with 2 columns") }
         ##  TODO: support for NA values in x when specifying strict errorvalues
@@ -1079,21 +1079,24 @@ Lighten <- function(color = col, factor=1.4){
 }
 
 ## adds a linear model with confidence levels to the plot
-PlotLM <- function(x = NULL, y = NULL, confidence = 0.95, col = "#BEBEBE44",
-                   line.col = "#E80000FF", border = NA, lwd = 2, ...) {
+PlotLM <- function(x = NULL, y = NULL, confidence = 0.95, error.col = "#BEBEBE44",
+                   col = "#E80000FF", border = NA, lwd = 2, hor = FALSE, ...) {
     ## linmod = NULL, 
     ## if (is.null(linmod) && (is.null(x) && is.null(y))) stop("Specify x and y or linmod")
     ## if (is.null(linmod)) linmod <- lm(y ~ x)
     linmod <- lm(y ~ x)
     ## TODO: doesn't work with only linmod because of variable names in newdata
     ## plot(a,y,xlim=c(20,90),ylim=c(0,80))
+    if (hor) {
+        newx <- seq(par("usr")[3], par("usr")[4], length.out = 100)
+    }
     newx <- seq(par("usr")[1], par("usr")[2], length.out = 100)
     prd <- predict(linmod,
                    newdata = data.frame(x = newx),
                    interval = c("confidence"), 
                    level = confidence, type= "response")
-    polygon(c(newx, rev(newx)), c(prd[, 2], rev(prd[, 3])), col = col, border = border, ...)
-    abline(linmod, col = line.col, lwd = lwd)
+    polygon(c(newx, rev(newx)), c(prd[, 2], rev(prd[, 3])), col = error.col, border = border, ...)
+    abline(linmod, col = col, lwd = lwd)
     ## lines(newx,prd[,2],col = col, lty = lty, lwd = lwd)
     ## lines(newx,prd[,3],col = col, lty = lty, lwd = lwd)
 }
