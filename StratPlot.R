@@ -161,233 +161,6 @@ Plot.data.frame <- function(df, ...) {
 
 }
 
-## Same as plot but with depth/time specific defaults
-StratPlot <- function(var, ...){
-    ## S3-method for the main plotting function
-    ## Args:
-    ##     var: the variable to plot: a dataframe, vector, matrix or list
-    ##     ...: other arguments
-    UseMethod("StratPlot", var)
-}
-
-## Creates a plot based on a depth/age vector and a variable vector
-StratPlot.default <- function(age, var, age.dir = "h", GTS = F,
-                              pol = F, pol0 = NULL, pol.col = "#4682B4E6",
-                              border = NA, bar = F, bar.col = "orange",
-                              bar.lwd = 2, add = F, error = NULL,
-                              error.type = "bars", error.col = "#BEBEBEE6",
-                              error.lwd = 1, error.code = 3, gap.size = NULL,
-                              abc = NULL, abc.adj = NULL, exaggerate = NULL,
-                              extype = "l", exlty = 1, excol = "gray",
-                              mar = "inherit",
-                              xax = if (age.dir == "h") 1 else 3, yax = 2,
-                              xlim = NULL, ylim = NULL, xlab = NULL,
-                              ylab = NULL, xlab.line = 2, ylab.line = 2,
-                              xlab.font = 1, ylab.font = 1, xlab.adj = NA,
-                              ylab.adj = NA, xlab.align = c(0.5, NA),
-                              ylab.align = c(0.5, NA), 
-                              xlab.ang = NULL, ylab.ang = NULL, xax.labs = NULL,
-                              yax.labs = NULL, xlab.cex = 1, ylab.cex = 1,
-                              xtck = NULL, ytck = NULL, xntck = 2, yntck = 2,
-                              las = 1, log = "", bty = "n", type = "o", lty = 1,
-                              pch = 16, verbose = TRUE, ...) {
-    ##  check var and age
-    if (length(var) != length(age)) {
-        stop("Unequal length of var and age")
-    }
-
-    ## insert gaps where needed
-    if (!is.null(gap.size)) {
-        too.large <- which(diff(age) > gap.size)
-        df <- InsertEmpty(data.frame(age, var), too.large)
-        age <- df$age
-        var <- df$var
-    }
-    
-    ## check age.dir
-    if (!age.dir %in% c("v", "ver", "vertical", "h", "hor", "horizontal")) {
-        stop("age.dir must be either 'v', 'ver', 'vertical' or 'h', 'hor, 'horizontal'")
-    } else {
-        age.dir <- substr(age.dir, 1, 1) # age.dir is converted to either 'v' or 'h'
-    }
-    
-    if (!add) {
-        ## set up a new plot
-
-
-        ## TODO: Make Stratplot work again with the new Plot backend
-        ##  mar (depends on xax and yax, which are not checked)
-        if (identical(mar, "auto")) {
-            mar <- c(if (1 %in% xax || 1 %in% yax) 5 else 2,
-                     if (2 %in% xax || 2 %in% yax) 5 else 2,
-                     if (3 %in% xax || 3 %in% yax) 5 else 2,
-                     if (4 %in% xax || 4 %in% yax) 5 else 2) + .1
-        } else if (identical(mar, "inherit")) {
-            mar <- par(no.readonly = TRUE)$mar
-        }
-
-        ##  xlim, ylim
-        if (age.dir == "h") {
-            if (is.null(xlim)) xlim <- range(age, na.rm = TRUE)
-            if (is.null(ylim)) ylim <- range(var, na.rm = TRUE)
-        } else {
-            if (is.null(xlim)) xlim <- range(var, na.rm = TRUE)
-            if (is.null(ylim)) ylim <- rev(range(age, na.rm = TRUE))
-        }
-    
-        ### TODO: this should be kept here
-        ##  default xlab, ylab
-        if (age.dir == "h") {
-            if (is.null(xlab)) {
-                if (max(age, na.rm = T) < 100) {
-                    if (verbose) message("Assuming age is given in Ma")
-                    xlab <- "Age (Ma)"
-                } else {
-                    if (verbose) message("Assuming age is given in ka")
-                    xlab <- "Age (ka)"
-                }
-            }
-            if (is.null(ylab)) {
-                if (verbose) message("No ylab provided")
-                ylab <- ""
-            }
-        } else {
-            if (is.null(xlab)) {
-                if (verbose) message("No xlab provided")
-                xlab <- ""
-            }
-            if (is.null(ylab)) {
-                if (max(age, na.rm = T) < 100) {
-                    if (verbose) message("Assuming age is given in Ma")
-                    ylab <- "Age (Ma)"
-                } else {
-                    if (verbose) message("Assuming age is given in ka")
-                    ylab <- "Age (ka)"
-                }
-            }
-        }
-
-        ##  set up plotting margins
-        par(mar = mar, bty = bty)
-    
-        ##  set up empty plot
-        plot(1, type = "n", xlim = xlim, ylim = ylim, log = log,
-             xlab = "", ylab = "", axes = FALSE, ...)
-        ## axes added later
-    }
-    
-    if (pol || bar) {
-        ## baseline to draw polygon and bar to
-        if (is.null(pol0)) {
-            ## logarithmic var axis -> draw polygon to minimum value
-            if ((age.dir == "h" && grepl("y", log)) ||
-                (age.dir == "v" && grepl("x", log))) {
-                pol0 <- min(var)
-            } else  {
-                pol0 <- 0
-            }
-        }
-    }
-    
-    ##  plot polygon
-    if (pol) {
-        if (anyNA(var) || anyNA(age)) {
-            if (verbose) message("NAs found in var/age, currently ignoring")
-            nona <- data.frame(var = var, age = age)
-            nona <- nona[complete.cases(nona), ]
-            x <- c(nona$age[1], nona$age, tail(nona$age, n = 1))
-            y <- c(pol0, nona$var, pol0)
-            ##  TODO: create polygons per non-NA region, like we do with errorregion
-            ##  enc <- rle(!is.na(var))
-            ##  endIdxs <- cumsum(enc$lengths)
-            ##  for (i in 1:length(enc$lengths)) {
-            ##    if (enc$values[i]) {
-            ##      endIdx <- endIdxs[i]
-            ##      startIdx <- endIdx - enc$lengths[i] + 1
-            ##      subvar <- var[startIdx:endIdx]
-            ##      subage <- age[startIdx:endIdx]
-            ##      x <- c(left, subvar, left)
-            ##      y <- c(subage[1], age, tail(age, n = 1))
-            ##    }
-            ##  }
-        } else {
-            ##  not sure if I want to use the current left or use:
-            ##  min(var, na.rm = TRUE) - .04 * diff(range(var, na.rm = TRUE))
-            x <- c(age[1], age, tail(age, n = 1))
-            y <- c(pol0, var, pol0)
-        }
-        polygon(x = if (age.dir == "h") x else y, y = if (age.dir == "h") y else x,
-                col = pol.col, border = border) 
-    }
-
-    ## plot exaggeration
-    if (!is.null(exaggerate)) {
-        points(if (age.dir == "h") age else var * exaggerate,
-               if (age.dir == "h") var * exaggerate else age,
-               type = extype, lty = exlty, col = excol) 
-    }
-    
-    ## plot error bars/area
-    if (!is.null(error)) {
-        ## if (length(error) > 0) {  # plot errorstuff
-        if (!all(error.type %in% c("bars", "area"))) {
-            stop(paste0("Incorrect error.type '",
-                        error.type,
-                        "', specify error.type as 'bars' or 'area'"))
-        }
-        if ("bars" %in% error.type) {
-            PlotErrorBars(age, var, error, col = error.col, code = error.code,
-                          age.dir = age.dir, lwd = error.lwd)
-        }
-        if ("area" %in% error.type) {
-            PlotErrorArea(age, var, error, col = error.col,
-                          age.dir = age.dir)
-        }
-        ## }
-    }
-
-    ##  plot bars (added after errors to overlap the possible areas)
-    if (bar) {
-        if (is.null(pol0)) pol0 <- 0
-        segments(x0 = if (age.dir == "h") age else rep(pol0, length(var)),
-                 y0 = if (age.dir == "h") rep(pol0, length(var)) else age,
-                 x1 = if (age.dir == "h") age else var,
-                 y1 = if (age.dir == "h") var else age,
-                 col = bar.col, lwd = bar.lwd)
-    }
-    
-    ##  plot the actual record
-    points(x = if (age.dir == "h") age else var,
-           y = if (age.dir == "h") var else age, type = type,
-           pch = pch, lty = lty, ...)
-
-    ## add axes
-    if (!add) {
-        ## loop so that I can specify both 1 and 2 for example.
-        for (i in xax) {
-            AddAxis(i, lim = xlim, ntck = xntck, las = las, labels = xax.labs)
-            AddAxLab(xlab, i, line = xlab.line, adj = xlab.adj, font = xlab.font,
-                     ang = xlab.ang, lab.adj = xlab.align, cex = xlab.cex)
-        }
-        for (i in yax) {
-            AddAxis(i, lim = ylim, ntck = yntck, las = las, labels = yax.labs)
-            AddAxLab(ylab, i, line = ylab.line, adj = ylab.adj, font = ylab.font,
-                     ang = ylab.ang, lab.adj = ylab.align, cex = ylab.cex)
-        }
-        if (GTS) {
-            AddGTS(age.dir = age.dir, Era = F, Period = T, Epoch = T, Age = F, frac = GTSfrac)
-        }
-    }
-    
-    ## add corner ABC
-    if (!is.null(abc)) {
-        if (is.null(abc.adj)) {
-            abc.adj <- 0.04 * abs(diff(par("usr")[1:2])) 
-        }
-        AddABC(abc, abc.adj)
-    }
-}
-
 ## add error bars to a plot
 PlotErrorBars <- function(error, ...) {
     UseMethod("PlotErrorBars", error)
@@ -513,11 +286,11 @@ PlotPolygon <- function(x, y, hor = TRUE, pol0 = 0, col = "gray", border = NA,
         nona <- data.frame(x = x, y = y)
         nona <- nona[complete.cases(nona), ]
         if (hor) {
-            pol.x <- c(nona$x[1], nona$x, tail(nona$x, n = 1))
-            pol.y <- c(pol0, nona$y, pol0)
-        } else {
             pol.x <- c(pol0, nona$x, pol0)
             pol.y <- c(nona$y[1], nona$y, tail(nona$y, n = 1))
+        } else {
+            pol.x <- c(nona$x[1], nona$x, tail(nona$x, n = 1))
+            pol.y <- c(pol0, nona$y, pol0)
         }
         ##  TODO: create polygons per non-NA region, like we do with errorregion
         ##  enc <- rle(!is.na(var))
@@ -536,51 +309,81 @@ PlotPolygon <- function(x, y, hor = TRUE, pol0 = 0, col = "gray", border = NA,
         ##  not sure if I want to use the current left or use:
         ##  min(var, na.rm = TRUE) - .04 * diff(range(var, na.rm = TRUE))
         if (hor) {
-            pol.x <- c(x[1], x, tail(x, n = 1))
-            pol.y <- c(pol0, y, pol0)
-        }
-        else {
             pol.x <- c(pol0, x, pol0)
             pol.y <- c(y[1], y, tail(y, n = 1))
+        }
+        else {
+            pol.x <- c(x[1], x, tail(x, n = 1))
+            pol.y <- c(pol0, y, pol0)
         }
     }
     polygon(pol.x, pol.y, col = col, border = border, ...) 
 }
 
+## Same as plot but with depth/time specific defaults
+StratPlot <- function(var, ...){
+    ## S3-method for the main plotting function
+    ## Args:
+    ##     var: the variable to plot: a dataframe, vector, matrix or list
+    ##     ...: other arguments
+    UseMethod("StratPlot", var)
+}
+
+## Creates a plot based on a depth/age vector and a variable vector
+StratPlot.default <- function(age, var, age.dir = "h", verbose = TRUE, ...) {
+    ##  check var and age
+    if (length(var) != length(age)) {
+        stop("Unequal length of var and age")
+    }
+
+    ## check age.dir
+    if (!age.dir %in% c("v", "ver", "vertical", "h", "hor", "horizontal")) {
+        stop("age.dir must be either 'v', 'ver', 'vertical' or 'h', 'hor, 'horizontal'")
+    } else {
+        age.dir <- substr(age.dir, 1, 1) # age.dir is converted to either 'v' or 'h'
+    }
+    if (age.dir == "h") {
+        x <- age
+        y <- var
+    } else if (age.dir == "v") {
+        x <- var
+        y <- age
+    }
+    Plot(x, y, ...)
+}
+
 StratPlot.data.frame <- function(var, # dataframe
                                  age = NULL, # optional vector 
                                  age.dir = "h",  # "v", "ver", "vertical" or "h" "hor" "horizontal" 
-                                 pol = F, bar = F,        # polygon/bar
-                                 gap.size = NULL,  # lines not drawn for timesteps > gap.size
-                                 oneplot = F, # logical, if TRUE plot all variables in the same plot
-                                 genframe = T, # show plots in same window
-                                 add = F, error = NULL,    # vector of errors to plot (note: relative values!)
+                                 oneplot = F,  # plot all variables in the same plot
+                                 genframe = T, # generate space for the plot(s) with par(mfrow(...))
+                                 add = NULL,
+                                 legend = NULL,
+                                 ## pol = F, bar = F,        # polygon/bar
+                                 ## pol.col = NULL, bar.col = NULL,
+                                 ## gap.size = NULL,  # lines not drawn for timesteps > gap.size
+                                 #error = NULL,    # vector of errors to plot (note: relative values!)
                                  stacked = F, # logical, calculate cumulative sum for vars, currently doesn't work.
-                                 ..., xax = if (age.dir == "h") 1 else 3, # default position of x-axis
-                                 log = "",
-                                 yax = 2,         # default position of yaxis
-                                 las = 1,         # default direction of axis labels
-                                 mar = "auto",    # generated based on xax and yax
-                                 ylab = NULL, xlab = NULL, xlim = NULL,
-                                 ylim = NULL,
-                                 xntck = 2, yntck = 2,
-                                 bty = "n", col = "black",
-                                 lwd = 1, lty = 1, type = "o", pch = 16,
-                                 error.type = "bars", pol0 = NULL, 
-                                 error.col = "#BEBEBEE6", pol.col = "#4682BEE6",
-                                 excol = "#325C87", bar.col = "#325C87",
-                                 border = NULL, legend = NULL) {
+                                 ## xax = if (age.dir == "h") 1 else 3, # default position of x-axis
+                                 ## log = "",
+                                 ## yax = 2,         # default position of yaxis
+                                 ## las = 1,         # default direction of axis labels
+                                 ## mar = "auto",    # generated based on xax and yax
+                                 ylab = NULL, xlab = NULL,# xlim = NULL,
+                                 ## ylim = NULL,
+                                 ## xntck = 2, yntck = 2,
+                                 ## bty = "n",
+                                 ## col = "black",
+                                 ## lwd = 1, lty = 1, type = "o", pch = 16,
+                                 ## border = NULL, legend = NULL,
+                                 verbose = TRUE, ...) {
     ##  Takes a dataframe of one or multiple variable(s) to  create a (set of) plot(s)
-    ## subset numeric columns
-    ## var <- var[, sapply(var, is.numeric)]
-    ##  TODO: do this as option?
 
     ##  check var and age
     if (!is.null(age)){
         if (length(age) != nrow(var)) {
-            stop("Length of age is unequal to nrow(var)")
+            stop("Length of age: ", length(age), " is unequal to nrow(var): ", nrow(var))
         }
-        ##  TODO add gapmaker support!
         if (verbose) message("Assuming only variables in dataframe")
     } else { # only var is provided
         ##  find column that has age/depth
@@ -635,7 +438,6 @@ StratPlot.data.frame <- function(var, # dataframe
     ##  parsing of x- and ylab 
     if (age.dir == "h") {
         if (!is.null(ylab)) {
-            ## TODO: parse ylab in similar manner as xlab, with proper expression check
             if (is.character(ylab) && length(ylab) > 1 && length(ylab) != nvar){ 
                 stop("Incorrect length of ylab")
             }
@@ -674,78 +476,96 @@ StratPlot.data.frame <- function(var, # dataframe
         }
     }
 
-    ##  specific plotting variables can also be defined for all variables in var
-    if (length(type) > 1) {
-        if (length(type) == nvar) {
-            types <- type
-        } else stop("Incorrect length of type")
-    } 
+    ## TODO: possibly automatically adjust ylim if oneplot = TRUE to match the full range?
+
+    ## TODO: figure out how to allow multiple cols, pchs, etc. to be set w/o
+    ## making it this cumbersome. Possibly with the below:
+    ## unpack the ... argument to check for further defaults
+    ## args <- list(...)
+
+    ## specific plotting variables can also be defined for all variables in var
+    ## if (!is.null(args$type)) { if (length(args$type == 1)) { type <-
+    ## args$type args$type <- NULL } else if (length(args$type) > 1) { if
+    ## (length(type) == nvar) { types <- args$type args$type <- NULL } else
+    ## stop("Incorrect length of type") } }
     
-    if (length(pch) > 1) {
-        if (length(pch) == nvar) {
-            pchs <- pch
-        } else stop("Incorrect length of pch")
-    }
+    ## if (!is.null(args$pch)) {
+    ##     if (length(args$pch == 1)) {
+    ##         pch <- args$pch
+    ##         args$pch <- NULL
+    ##     } else if (length(args$pch) > 1) {
+    ##         if (length(args$pch) == nvar) {
+    ##             pchs <- args$pch
+    ##             args$pch <- NULL
+    ##         } else stop("Incorrect length of pch")
+    ##     }
+    ## }
 
-    if (length(col) > 1) {
-        if (length(col) == nvar) {
-            cols <- col
-        } else stop("Incorrect length of col")
-    } else cols <- NULL
+    ## if (!is.null(args$col)) {
+    ##     if (length(args$col) == 1) {
+    ##         col <- args$col
+    ##     }
+    ##     if (length(col) > 1) {
+    ##         if (length(col) == nvar) {
+    ##             cols <- col
+    ##         } else stop("Incorrect length of col")
+    ##     } else cols <- NULL
+    ## }
     
-    if (length(lty) > 1) {
-        if (length(lty) == nvar) {
-            ltys <- lty
-        } else stop("Incorrect length of lty")
-    }
+    ## if (length(lty) > 1) {
+    ##     if (length(lty) == nvar) {
+    ##         ltys <- lty
+    ##     } else stop("Incorrect length of lty")
+    ## }
     
-    if (length(lwd) > 1) {
-        if (length(lwd) == nvar) {
-            lwds <- lwd
-        } else stop("Incorrect length of lwd")
-    }
+    ## if (length(lwd) > 1) {
+    ##     if (length(lwd) == nvar) {
+    ##         lwds <- lwd
+    ##     } else stop("Incorrect length of lwd")
+    ## }
 
-    if (length(pol) > 1) {
-        if (length(pol) == nvar) {
-            pols <- pol
-        } else stop("Incorrect length of pol")
-    }
+    ## if (length(pol) > 1) {
+    ##     if (length(pol) == nvar) {
+    ##         pols <- pol
+    ##     } else stop("Incorrect length of pol")
+    ## }
 
-    if (length(pol.col) > 1) {
-        if (length(pol.col) == nvar) {
-            pol.cols <- pol.col
-        } else stop("Incorrect length of pol.col")
-    }
+    ## if (length(pol.col) > 1) {
+    ##     if (length(pol.col) == nvar) {
+    ##         pol.cols <- pol.col
+    ##     } else stop("Incorrect length of pol.col")
+    ## }
 
-    if (length(bar) > 1) {
-        if (length(bar) == nvar) {
-            bars <- bar
-        } else stop("Incorrect length of bar")
-    }
+    ## if (length(bar) > 1) {
+    ##     if (length(bar) == nvar) {
+    ##         bars <- bar
+    ##     } else stop("Incorrect length of bar")
+    ## }
 
-    if (length(bar.col) > 1) {
-        if (length(bar.col) == nvar) {
-            bar.cols <- bar.col
-        } else stop("Incorrect length of bar.col")
-    }
+    ## if (length(bar.col) > 1) {
+    ##     if (length(bar.col) == nvar) {
+    ##         bar.cols <- bar.col
+    ##     } else stop("Incorrect length of bar.col")
+    ## }
 
-    if (length(excol) > 1) {
-        if (length(excol) == nvar) {
-            excols <- excol
-        } else stop("Incorrect length of excol")
-    }
+    ## if (length(excol) > 1) {
+    ##     if (length(excol) == nvar) {
+    ##         excols <- excol
+    ##     } else stop("Incorrect length of excol")
+    ## }
 
-    if (is.list(ylim)){
-        if (length(ylim) == nvar) {
-            ylims <- ylim
-        } else stop("Incorrect length of ylim")
-    }
-    ##  TODO: also do this for bty?, error.type, error.col, pol0 and border?
-    if (length(log) > 1) {
-        if (length(log) == nvar) {
-            logs <- log
-        } else stop("Incorrect length of log")
-    }
+    ## if (is.list(ylim)){
+    ##     if (length(ylim) == nvar) {
+    ##         ylims <- ylim
+    ##     } else stop("Incorrect length of ylim")
+    ## }
+    ## ##  TODO: also do this for bty?, error.type, error.col, pol0 and border?
+
+    ## if (length(log) > 1) {
+    ##     if (length(log) == nvar) {
+    ##         logs <- log
+    ##     } else stop("Incorrect length of log")
+    ## }
    
     ##  set up the plotting region
     ##  last is to check if it wasn't a df with only 2 columns
@@ -765,28 +585,30 @@ StratPlot.data.frame <- function(var, # dataframe
                       if (i == 1) var[, 1]
                       else rowSums(var[, 1:i])
                   } else { var[, i] }, age = age, age.dir = age.dir,
-                  gap.size = gap.size,
-                  pol = if (exists("pols")) pols[i] else pol, ## pol = pol[i],
-                  bar = if (exists("bars")) bars[i] else bar,
+                  ## gap.size = gap.size,
+                  ## pol = if (!is.null(args$pol)) args$pol[i], ## pol = pol[i],
+                  ## bar = if (!is.null(args$bar)) args$bars[i] else bar,
                   add = if (is.null(add)) { if ((oneplot || stacked) && i != 1) TRUE else FALSE } else { add },
-                  error = error, xax = xax, yax = yax, mar = mar, ## TODO: change exists check for something else b/c it currently uses the global space
+                  ## error = error, xax = xax, yax = yax, mar = mar, ## TODO: change exists check for something else b/c it currently uses the global space
                   ylab = if (exists("ylabs")) ylabs[i] else ylab,
-                  xlab = if (exists("xlabs")) xlabs[i] else xlab, xntck = xntck,
-                  yntck = yntck,
+                  xlab = if (exists("xlabs")) xlabs[i] else xlab,
+                  ## xntck = xntck,
+                  ## yntck = yntck,
 
-                  xlim = if (oneplot && age == "v") range(var, na.rm = TRUE) else xlim,
-                  ylim = if (oneplot && age == "h") range(var, na.rm = TRUE) else if (exists("ylims")) ylims[[i]] else ylim,
-                  bty = bty, lty = if (exists("ltys")) ltys[i] else lty,
-                  col = if (!is.null(cols)) cols[i] else col,
-                  lwd = if (exists("lwds")) lwds[i] else lwd,
-                  type = if (exists("types")) types[i] else type,
-                  pch = if (exists("pchs")) pchs[i] else pch,
-                  log = if (exists("logs")) logs[i] else log,
-                  error.type = error.type, error.col = error.col, pol0 = pol0,
-                  pol.col = if (exists("pol.cols")) pol.cols[i] else pol.col,
-                  bar.col = if (exists("bar.cols")) bar.cols[i] else bar.col,
-                  excol = if (exists("excols")) excols[i] else excol,
-                  border = border, ...)
+                  ## xlim = if (oneplot && age == "v") range(var, na.rm = TRUE) else xlim,
+                  ## ylim = if (oneplot && age == "h") range(var, na.rm = TRUE) else if (exists("ylims")) ylims[[i]] else ylim,
+                  ## bty = bty, lty = if (exists("ltys")) ltys[i] else lty,
+                  ## col = if (!is.null(cols)) cols[i] else col,
+                  ## lwd = if (exists("lwds")) lwds[i] else lwd,
+                  ## type = if (exists("types")) types[i] else type,
+                  ## pch = if (exists("pchs")) pchs[i] else pch,
+                  ## log = if (exists("logs")) logs[i] else log,
+                  ## error.type = error.type, error.col = error.col, pol0 = pol0,
+                  ## pol.col = if (exists("pol.cols")) pol.cols[i] else pol.col,
+                  ## bar.col = if (exists("bar.cols")) bar.cols[i] else bar.col,
+                  ## excol = if (exists("excols")) excols[i] else excol,
+                  ## border = border,
+                  ...)
     }
     if (!is.null(legend)) {
         legend("topright", legend = legend, col = if (exists("cols")) cols else col,
