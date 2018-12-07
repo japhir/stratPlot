@@ -1,3 +1,8 @@
+WARNING: this package has not been updated in quite a while, since I have 
+switched to using ggplot. The still-relevant features from this packages will
+at some point be migrated to ggplot.
+
+
 # StratPlot
 The StratPlot function allows you to easily create depth and age profile plots
 in R. 
