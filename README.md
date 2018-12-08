@@ -66,3 +66,14 @@ temp <- data.frame(age = 41:50,
 StratPlot(temp$age, temp$temp, xlab = Temperature~(degree~C), 
           ylab = "Age (Ma)", error = temp$error)
 ```
+
+## example plot
+
+The supplementary age-model plot to Cramwinckel et al. 2018<sup>[1](https://www.nature.com/articles/s41586-018-0272-2)</sup>
+was created using (slightly different versions of) these plotting functions 
+(as well as some tweaking of colours in Inkscape).
+
+![Age Model](https://media.springernature.com/lw900/springer-static/esm/art%3A10.1038%2Fs41586-018-0272-2/MediaObjects/41586_2018_272_Fig5_ESM.jpg)
+
+1. Cramwinckel et al. Synchronous tropical and polar temperature evolution in the Eocene. 
+   Nature volume 559, pages382–386 (2018) [doi:10.1038/s41586-018-0272-2](https://doi.org/10.1038/s41586-018-0272-2)
